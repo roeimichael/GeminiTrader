@@ -1,0 +1,6 @@
+google-genai
+pandas
+requests
+PySimpleGUI
+python-dotenv
+schedule
