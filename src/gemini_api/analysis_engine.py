@@ -1,3 +1,4 @@
+import time
 import google.generativeai as genai
 from src.gemini_api.prompt_manager import (
     FUNDAMENTAL_PROMPT_TEMPLATE,
@@ -8,9 +9,10 @@ from src.gemini_api.prompt_manager import (
 
 
 class GeminiAnalysisEngine:
-    def __init__(self, api_key, model_name):
+    def __init__(self, api_key, model_name, rate_limit_delay=12):
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel(model_name)
+        self.rate_limit_delay = rate_limit_delay
 
     def _extract_score(self, response_text):
         try:
@@ -27,7 +29,7 @@ class GeminiAnalysisEngine:
         except (IndexError, ValueError) as e:
             raise ValueError(f"Failed to parse score from response: {e}")
 
-    def analyze_stock(self, ticker, stock_data):
+    def analyze_stock(self, ticker, stock_data, verbose=False):
         scores = {
             'fundamental_score': None,
             'technical_score': None,
@@ -40,7 +42,10 @@ class GeminiAnalysisEngine:
         )
         try:
             response = self.model.generate_content(fundamental_prompt)
+            if verbose:
+                print(f"\n[FUNDAMENTAL RAW RESPONSE for {ticker}]:\n{response.text}\n")
             scores['fundamental_score'] = self._extract_score(response.text)
+            time.sleep(self.rate_limit_delay)
         except (ValueError, Exception) as e:
             print(f"Error analyzing fundamental for {ticker}: {e}")
 
@@ -50,7 +55,10 @@ class GeminiAnalysisEngine:
         )
         try:
             response = self.model.generate_content(technical_prompt)
+            if verbose:
+                print(f"\n[TECHNICAL RAW RESPONSE for {ticker}]:\n{response.text}\n")
             scores['technical_score'] = self._extract_score(response.text)
+            time.sleep(self.rate_limit_delay)
         except (ValueError, Exception) as e:
             print(f"Error analyzing technical for {ticker}: {e}")
 
@@ -60,17 +68,23 @@ class GeminiAnalysisEngine:
         )
         try:
             response = self.model.generate_content(sentiment_prompt)
+            if verbose:
+                print(f"\n[SENTIMENT RAW RESPONSE for {ticker}]:\n{response.text}\n")
             scores['sentiment_score'] = self._extract_score(response.text)
+            time.sleep(self.rate_limit_delay)
         except (ValueError, Exception) as e:
             print(f"Error analyzing sentiment for {ticker}: {e}")
 
         return scores
 
-    def analyze_macro(self, macro_data):
+    def analyze_macro(self, macro_data, verbose=False):
         macro_prompt = MACRO_PROMPT_TEMPLATE.format(MACRO_DATA=macro_data)
 
         try:
             response = self.model.generate_content(macro_prompt)
+            if verbose:
+                print(f"\n[MACRO RAW RESPONSE]:\n{response.text}\n")
+            time.sleep(self.rate_limit_delay)
             return response.text
         except Exception as e:
             print(f"Error analyzing macro data: {e}")

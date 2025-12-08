@@ -23,11 +23,13 @@ def test_gemini_api():
     print(f"✓ Model: {Settings.GEMINI_MODEL}")
 
     print("\nInitializing Gemini Analysis Engine...")
-    engine = GeminiAnalysisEngine(api_key, Settings.GEMINI_MODEL)
+    print("(Rate limiting: 12 second delay between API calls to avoid quota errors)")
+    engine = GeminiAnalysisEngine(api_key, Settings.GEMINI_MODEL, rate_limit_delay=12)
     print("✓ Engine initialized successfully\n")
 
     test_tickers = Settings.DEFAULT_TICKERS[:3]
-    print(f"Testing with first 3 tickers: {', '.join(test_tickers)}\n")
+    print(f"Testing with first 3 tickers: {', '.join(test_tickers)}")
+    print(f"Expected runtime: ~2 minutes (3 tickers × 3 calls × 12s delay = 108s + API time)\n")
 
     results = []
 
@@ -40,8 +42,8 @@ def test_gemini_api():
             stock_data = get_stock_data(ticker)
             print(f"✓ Stock data retrieved for {ticker}")
 
-            print(f"\n  Making API call 1/3: Fundamental Analysis...")
-            scores = engine.analyze_stock(ticker, stock_data)
+            print(f"\n  Making 3 API calls (with 12s delays between each)...")
+            scores = engine.analyze_stock(ticker, stock_data, verbose=True)
 
             if all(score is not None for score in scores.values()):
                 results.append({
@@ -73,7 +75,7 @@ def test_gemini_api():
         print("✓ Macro data retrieved")
 
         print("\nMaking API call: Macro Environment Analysis...")
-        macro_summary = engine.analyze_macro(macro_data)
+        macro_summary = engine.analyze_macro(macro_data, verbose=True)
 
         if macro_summary:
             print("✓ Macro analysis successful\n")

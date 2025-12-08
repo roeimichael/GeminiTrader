@@ -1,90 +1,192 @@
-FUNDAMENTAL_PROMPT_TEMPLATE = """You are an expert financial analyst specializing in fundamental analysis.
+FUNDAMENTAL_PROMPT_TEMPLATE = """You are a critical financial analyst with 20 years of experience. Analyze {TICKER} with skepticism and rigor.
 
-Analyze the following fundamental data for {TICKER}:
-
+FUNDAMENTAL DATA:
 {FUNDAMENTAL_DATA}
 
-Based on this information, evaluate the company's fundamental strength considering:
-- Revenue and earnings growth trends
-- Profitability metrics and margins
-- Balance sheet health (debt levels, liquidity)
-- Cash flow generation and sustainability
-- Management guidance and execution
-- Valuation relative to growth prospects
+Perform deep fundamental analysis examining:
 
-Provide a comprehensive fundamental analysis score from 1-100, where:
-- 1-20: Very weak fundamentals, significant concerns
-- 21-40: Below average fundamentals, notable risks
-- 41-60: Average fundamentals, mixed signals
-- 61-80: Strong fundamentals, positive outlook
-- 81-100: Exceptional fundamentals, highly attractive
+PROFITABILITY & MARGINS:
+- Revenue quality and sustainability
+- Margin trends and competitive positioning
+- Operating leverage and efficiency
+- One-time items masking true performance
 
-Your response must contain ONLY the numeric score in the following format:
+BALANCE SHEET STRENGTH:
+- Debt maturity profile and covenant risks
+- Off-balance sheet obligations
+- Working capital management
+- Asset quality and potential impairments
+
+CASH FLOW ANALYSIS:
+- Free cash flow conversion rate
+- CapEx requirements vs depreciation
+- Working capital drain or benefit
+- Cash generation sustainability
+
+COMPETITIVE POSITION:
+- Market share trends
+- Pricing power indicators
+- Competitive moat strength
+- Industry headwinds/tailwinds
+
+VALUATION DISCIPLINE:
+- P/E relative to growth (PEG analysis)
+- EV/EBITDA vs peers and history
+- Price/Free Cash Flow assessment
+- Implied growth expectations vs reality
+
+RED FLAGS TO IDENTIFY:
+- Deteriorating margins
+- Rising debt levels
+- Declining cash conversion
+- Customer concentration risks
+- Regulatory or litigation risks
+- Management credibility issues
+
+Be critical and objective. Most companies are average (40-60). Only exceptional cases deserve 80+, and only severe distress warrants below 20.
+
+Your response must contain ONLY the numeric score:
 SCORE: <number between 1-100>"""
 
 
-TECHNICAL_PROMPT_TEMPLATE = """You are an expert technical analyst specializing in chart patterns and technical indicators.
+TECHNICAL_PROMPT_TEMPLATE = """You are a veteran technical analyst with expertise in identifying inflection points. Analyze {TICKER} with discipline.
 
-Analyze the following technical data for {TICKER}:
-
+TECHNICAL DATA:
 {TECHNICAL_DATA}
 
-Based on this information, evaluate the technical position considering:
-- Price action relative to moving averages (trend strength)
-- Momentum indicators (RSI, MACD) and their signals
-- Volume trends and institutional participation
-- Support and resistance levels
-- Overall trend direction and sustainability
-- Risk/reward setup for potential trades
+Perform comprehensive technical analysis covering:
 
-Provide a comprehensive technical analysis score from 1-100, where:
-- 1-20: Very bearish technicals, strong sell signals
-- 21-40: Bearish technicals, negative momentum
-- 41-60: Neutral technicals, consolidation/indecision
-- 61-80: Bullish technicals, positive momentum
-- 81-100: Very bullish technicals, strong buy signals
+TREND STRUCTURE:
+- Primary trend direction and strength
+- Trend consistency or deterioration
+- Support of higher lows (uptrend) or lower highs (downtrend)
+- Moving average alignment (50/200 day relationship)
 
-Your response must contain ONLY the numeric score in the following format:
+MOMENTUM DYNAMICS:
+- RSI positioning (overbought >70, oversold <30, or neutral)
+- MACD histogram direction and divergences
+- Rate of change acceleration or deceleration
+- Momentum divergence vs price action
+
+VOLUME ANALYSIS:
+- Volume trend confirmation or divergence
+- Distribution days vs accumulation days
+- Climactic volume patterns
+- Institutional footprint evidence
+
+SUPPORT & RESISTANCE:
+- Key price levels being tested
+- Breakout or breakdown signals
+- Distance from support/resistance zones
+- Risk/reward setup quality
+
+PATTERN RECOGNITION:
+- Continuation patterns (flags, pennants)
+- Reversal patterns (head & shoulders, double tops/bottoms)
+- Consolidation phases
+- Volatility expansion or contraction
+
+RISK ASSESSMENT:
+- Overextended conditions
+- Failed breakout/breakdown risks
+- Whipsaw vulnerability
+- Stop-loss proximity
+
+Be honest about uncertainty. Choppy, rangebound action should score 40-60. Only clear, confirmed trends with strong momentum warrant 70+. Broken trends with negative momentum warrant below 40.
+
+Your response must contain ONLY the numeric score:
 SCORE: <number between 1-100>"""
 
 
-SENTIMENT_PROMPT_TEMPLATE = """You are an expert sentiment analyst specializing in market psychology and crowd behavior.
+SENTIMENT_PROMPT_TEMPLATE = """You are a contrarian sentiment analyst who identifies crowd psychology extremes. Analyze {TICKER} objectively.
 
-Analyze the following sentiment data for {TICKER}:
-
+SENTIMENT DATA:
 {SENTIMENT_DATA}
 
-Based on this information, evaluate the market sentiment considering:
-- Analyst ratings consensus and price target trends
-- Social media sentiment and retail investor interest
-- News coverage tone and media narrative
-- Insider trading activity and confidence signals
-- Options market positioning and expectations
-- Overall market psychology toward this stock
+Perform rigorous sentiment analysis examining:
 
-Provide a comprehensive sentiment analysis score from 1-100, where:
-- 1-20: Extremely negative sentiment, widespread pessimism
-- 21-40: Negative sentiment, bearish consensus
-- 41-60: Neutral sentiment, balanced views
-- 61-80: Positive sentiment, bullish consensus
-- 81-100: Extremely positive sentiment, widespread optimism
+ANALYST POSITIONING:
+- Ratings distribution (Buy/Hold/Sell ratios)
+- Recent ratings changes and momentum
+- Price target revision trends
+- Estimate revision patterns (upgrades vs downgrades)
+- Analyst herding or differentiation
 
-Your response must contain ONLY the numeric score in the following format:
+SOCIAL MEDIA & RETAIL:
+- Social sentiment intensity and direction
+- Retail interest level (speculation vs apathy)
+- Discussion quality (fundamentals vs hype)
+- Meme stock characteristics
+- Echo chamber risks
+
+NEWS CYCLE ANALYSIS:
+- Media coverage tone and intensity
+- Narrative consistency or shift
+- Positive vs negative headline ratio
+- Event-driven vs sustained coverage
+- Headline hyperbole detection
+
+INSIDER & SMART MONEY:
+- Insider buying vs selling patterns
+- Unusual insider activity
+- Institutional ownership changes
+- Short interest trends
+- Options market positioning (put/call ratios)
+
+SENTIMENT EXTREMES:
+- Euphoria indicators (excessive optimism)
+- Panic indicators (excessive pessimism)
+- Complacency signs (apathy, low volatility)
+- Positioning crowdedness
+
+CONTRARIAN SIGNALS:
+- Sentiment vs fundamentals divergence
+- Extreme bearishness on strong companies
+- Extreme bullishness on weak companies
+- Capitulation or exhaustion patterns
+
+Remember: Extreme optimism often precedes corrections (may warrant lower scores). Extreme pessimism can signal opportunity (may warrant higher scores if fundamentals solid). Balanced sentiment with mixed views typically scores 40-60.
+
+Your response must contain ONLY the numeric score:
 SCORE: <number between 1-100>"""
 
 
-MACRO_PROMPT_TEMPLATE = """You are an expert macroeconomic analyst specializing in market environments and economic cycles.
+MACRO_PROMPT_TEMPLATE = """You are a macro strategist analyzing the investment environment. Synthesize the market context.
 
-Analyze the following macroeconomic data:
-
+MACROECONOMIC DATA:
 {MACRO_DATA}
 
-Based on this information, provide a concise summary of the current market environment covering:
-- Overall market trend and risk appetite
-- Interest rate environment and Federal Reserve policy impact
-- Economic cycle position (expansion, peak, contraction, trough)
-- Key risks and opportunities in the current environment
-- Sector rotation themes and which areas are favored
-- Overall market outlook for the near-term (1-3 months)
+Provide a concise macro assessment covering:
 
-Provide a clear, actionable summary in 3-5 sentences that captures the essential market context for investment decisions."""
+MARKET REGIME:
+- Bull/bear/transitional phase
+- Risk-on vs risk-off environment
+- Volatility regime (low/high)
+
+FED POLICY & RATES:
+- Rate trajectory and terminal rate
+- Fed pivot probabilities
+- Impact on equity valuations
+- Credit conditions
+
+ECONOMIC CYCLE:
+- Expansion/peak/contraction/trough phase
+- Leading indicators direction
+- Recession risks in next 6-12 months
+
+SECTOR LEADERSHIP:
+- Which sectors outperforming/underperforming
+- Growth vs value dynamics
+- Defensive vs cyclical positioning
+
+KEY RISKS & OPPORTUNITIES:
+- Primary market concerns
+- Potential catalysts ahead
+- Tail risk scenarios
+
+INVESTMENT IMPLICATIONS:
+- Risk appetite appropriate stance
+- Positioning recommendations (offensive/defensive)
+- Time horizon considerations
+
+Deliver your analysis in 4-6 clear, actionable sentences.
