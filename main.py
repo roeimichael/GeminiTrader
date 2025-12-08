@@ -26,7 +26,6 @@ def main():
     model_name = Settings.GEMINI_MODEL
 
     def run_analysis_immediately():
-        """Run analysis immediately in a separate thread when button is clicked."""
         logger.info("Run Now button clicked - starting analysis in background thread...")
 
         def run_analysis():
@@ -38,7 +37,6 @@ def main():
         logger.info("Analysis thread started")
 
     def scheduler_func():
-        """Placeholder function called periodically by GUI event loop."""
         pass
 
     logger.info(f"Starting scheduler for daily analysis at {Settings.ANALYSIS_TIME_UTC} UTC...")

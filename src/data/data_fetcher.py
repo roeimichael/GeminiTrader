@@ -1,18 +1,4 @@
 def get_stock_data(ticker):
-    """
-    Fetches fundamental, technical, and sentiment data for a given stock ticker.
-
-    Args:
-        ticker: Stock ticker symbol (e.g., 'AAPL')
-
-    Returns:
-        Dictionary containing Fundamental, Technical, and Sentiment data as strings.
-
-    TODO: In production, this would fetch real data from APIs like:
-    - Alpha Vantage, Yahoo Finance, or IEX Cloud for fundamental data
-    - Technical analysis indicators from market data providers
-    - News sentiment from financial news APIs
-    """
     stock_data = {
         'Fundamental': f"""Recent 10-Q report for {ticker} shows revenue growth of 12% YoY.
             Earnings per share increased to $1.45, beating analyst expectations of $1.38.
@@ -39,18 +25,6 @@ def get_stock_data(ticker):
 
 
 def get_macro_data():
-    """
-    Fetches macro-level market data and economic indicators.
-
-    Returns:
-        String containing detailed macro market context.
-
-    TODO: In production, this would fetch real data from:
-    - Federal Reserve Economic Data (FRED)
-    - Market indices APIs
-    - Treasury and bond market data providers
-    - Economic calendar APIs
-    """
     macro_data = """Current Macroeconomic Environment:
 
     MARKET INDICES:

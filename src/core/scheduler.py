@@ -12,17 +12,6 @@ from src.core.logger_setup import setup_logger
 class DailyProcessor:
     @staticmethod
     def run_daily_analysis(api_key, model_name, logger):
-        """
-        Orchestrates the daily stock analysis process.
-
-        Args:
-            api_key: Google Gemini API key
-            model_name: Model name to use for analysis
-            logger: Logger instance for logging messages
-
-        Returns:
-            None. Results are saved to CSV file specified in settings.
-        """
         logger.info("Initializing Gemini Analysis Engine...")
         engine = GeminiAnalysisEngine(api_key, model_name)
         logger.info(f"Analysis engine initialized with model: {model_name}")
@@ -95,17 +84,6 @@ class DailyProcessor:
 
 
 def start_scheduler(api_key, model_name, log_queue):
-    """
-    Starts the daily scheduler that runs analysis at the configured time.
-
-    Args:
-        api_key: Google Gemini API key
-        model_name: Model name to use for analysis
-        log_queue: Queue for GUI log messages
-
-    Returns:
-        None. Runs indefinitely in a daemon thread.
-    """
     logger = setup_logger(gui_queue=log_queue)
 
     scheduled_time = Settings.ANALYSIS_TIME_UTC

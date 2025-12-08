@@ -9,29 +9,10 @@ from src.gemini_api.prompt_manager import (
 
 class GeminiAnalysisEngine:
     def __init__(self, api_key, model_name):
-        """
-        Initialize the Gemini Analysis Engine.
-
-        Args:
-            api_key: Google Gemini API key
-            model_name: Model name to use (e.g., 'gemini-1.5-flash')
-        """
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel(model_name)
 
     def _extract_score(self, response_text):
-        """
-        Extract numeric score from Gemini API response.
-
-        Args:
-            response_text: The response text from Gemini API
-
-        Returns:
-            Integer score between 1-100
-
-        Raises:
-            ValueError: If score cannot be parsed from response
-        """
         try:
             if 'SCORE:' in response_text:
                 score_part = response_text.split('SCORE:')[1].strip()
@@ -47,17 +28,6 @@ class GeminiAnalysisEngine:
             raise ValueError(f"Failed to parse score from response: {e}")
 
     def analyze_stock(self, ticker, stock_data):
-        """
-        Analyze a stock using Gemini API for fundamental, technical, and sentiment analysis.
-
-        Args:
-            ticker: Stock ticker symbol (e.g., 'AAPL')
-            stock_data: Dictionary with 'Fundamental', 'Technical', 'Sentiment' keys
-
-        Returns:
-            Dictionary with 'fundamental_score', 'technical_score', 'sentiment_score' keys
-            Returns None for any score that fails to parse
-        """
         scores = {
             'fundamental_score': None,
             'technical_score': None,
@@ -97,15 +67,6 @@ class GeminiAnalysisEngine:
         return scores
 
     def analyze_macro(self, macro_data):
-        """
-        Analyze macroeconomic environment using Gemini API.
-
-        Args:
-            macro_data: String containing macroeconomic data
-
-        Returns:
-            String containing Gemini's analysis summary, or None if error occurs
-        """
         macro_prompt = MACRO_PROMPT_TEMPLATE.format(MACRO_DATA=macro_data)
 
         try:
