@@ -1,8 +1,12 @@
+import time
+import threading
 import pandas as pd
+import schedule
 from src.config.settings import Settings
 from src.core.stock_list import get_sp500_tickers
 from src.data.data_fetcher import get_stock_data, get_macro_data
 from src.gemini_api.analysis_engine import GeminiAnalysisEngine
+from src.core.logger_setup import setup_logger
 
 
 class DailyProcessor:
@@ -88,3 +92,38 @@ class DailyProcessor:
             logger.error("ERROR: No results to save - all analyses failed")
 
         logger.info("Daily analysis process completed")
+
+
+def start_scheduler(api_key, model_name, log_queue):
+    """
+    Starts the daily scheduler that runs analysis at the configured time.
+
+    Args:
+        api_key: Google Gemini API key
+        model_name: Model name to use for analysis
+        log_queue: Queue for GUI log messages
+
+    Returns:
+        None. Runs indefinitely in a daemon thread.
+    """
+    logger = setup_logger(gui_queue=log_queue)
+
+    scheduled_time = Settings.ANALYSIS_TIME_UTC
+    logger.info(f"Scheduling daily analysis to run at {scheduled_time} UTC")
+
+    schedule.every().day.at(scheduled_time).do(
+        DailyProcessor.run_daily_analysis,
+        api_key=api_key,
+        model_name=model_name,
+        logger=logger
+    )
+
+    def run_scheduler():
+        logger.info("Scheduler thread started")
+        while True:
+            schedule.run_pending()
+            time.sleep(60)
+
+    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
+    scheduler_thread.start()
+    logger.info("Scheduler initialized and running in background thread")
