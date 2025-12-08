@@ -189,4 +189,4 @@ INVESTMENT IMPLICATIONS:
 - Positioning recommendations (offensive/defensive)
 - Time horizon considerations
 
-Deliver your analysis in 4-6 clear, actionable sentences.
+Deliver your analysis in 4-6 clear, actionable sentences."""
