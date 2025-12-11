@@ -1,4 +1,10 @@
 .env
 __pycache__
 /venv
+.venv
 *.csv
+*.log
+checkpoint_*.csv
+overnight_analysis_*.csv
+macro_analysis_*.txt
+overnight_progress_*.csv

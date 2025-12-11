@@ -28,12 +28,8 @@ class DailyProcessor:
 
         logger.info("Starting stock analysis loop...")
         for ticker in tickers:
-            logger.info(f"Analyzing {ticker}...")
-
             try:
                 stock_data = get_stock_data(ticker)
-                logger.info(f"Stock data retrieved for {ticker}")
-
                 scores = engine.analyze_stock(ticker, stock_data)
 
                 if all(score is not None for score in scores.values()):
