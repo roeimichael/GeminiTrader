@@ -11,10 +11,11 @@ from src.core.logger_setup import setup_logger
 
 class DailyProcessor:
     @staticmethod
-    def run_daily_analysis(api_key, model_name, logger):
+    def run_daily_analysis(api_key_manager, model_name, logger):
         logger.info("Initializing Gemini Analysis Engine...")
-        engine = GeminiAnalysisEngine(api_key, model_name)
+        engine = GeminiAnalysisEngine(api_key_manager, model_name)
         logger.info(f"Analysis engine initialized with model: {model_name}")
+        logger.info(f"Using {api_key_manager.get_key_count() if hasattr(api_key_manager, 'get_key_count') else 1} API key(s)")
 
         logger.info("Fetching ticker list...")
         tickers = get_sp500_tickers()
@@ -83,7 +84,7 @@ class DailyProcessor:
         logger.info("Daily analysis process completed")
 
 
-def start_scheduler(api_key, model_name, log_queue):
+def start_scheduler(api_key_manager, model_name, log_queue):
     logger = setup_logger(gui_queue=log_queue)
 
     scheduled_time = Settings.ANALYSIS_TIME_UTC
@@ -91,7 +92,7 @@ def start_scheduler(api_key, model_name, log_queue):
 
     schedule.every().day.at(scheduled_time).do(
         DailyProcessor.run_daily_analysis,
-        api_key=api_key,
+        api_key_manager=api_key_manager,
         model_name=model_name,
         logger=logger
     )

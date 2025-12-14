@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from src.config.settings import Settings
 from src.data.data_fetcher import get_stock_data, get_macro_data
 from src.gemini_api.analysis_engine import GeminiAnalysisEngine
+from src.utils.api_key_manager import APIKeyManager
 
 
 def test_gemini_api():
@@ -11,20 +12,24 @@ def test_gemini_api():
     print("=" * 80)
 
     load_dotenv()
-    api_key = os.getenv('GEMINI_API_KEY')
 
-    if not api_key:
-        print("ERROR: GEMINI_API_KEY not found in .env file")
-        print("Please add your API key to the .env file:")
-        print("GEMINI_API_KEY=your_actual_api_key_here")
+    # Initialize API Key Manager
+    try:
+        api_key_manager = APIKeyManager()
+    except ValueError as e:
+        print(f"ERROR: {e}")
+        print("\nPlease add your API key(s) to the .env file using one of these formats:")
+        print("  Option 1: GEMINI_API_KEY=your_api_key_here")
+        print("  Option 2: GEMINI_API_KEYS=key1,key2,key3")
+        print("  Option 3: GEMINI_API_KEY_1=key1, GEMINI_API_KEY_2=key2, etc.")
         return
 
-    print(f"\n✓ API Key loaded: {api_key[:10]}...{api_key[-4:]}")
+    print(f"\n✓ Loaded {api_key_manager.get_key_count()} API key(s)")
     print(f"✓ Model: {Settings.GEMINI_MODEL}")
 
     print("\nInitializing Gemini Analysis Engine...")
     print("(Rate limiting: 12 second delay between API calls to avoid quota errors)")
-    engine = GeminiAnalysisEngine(api_key, Settings.GEMINI_MODEL, rate_limit_delay=12)
+    engine = GeminiAnalysisEngine(api_key_manager, Settings.GEMINI_MODEL, rate_limit_delay=12)
     print("✓ Engine initialized successfully\n")
 
     test_tickers = Settings.DEFAULT_TICKERS[:3]

@@ -6,6 +6,7 @@ import pandas as pd
 from src.config.settings import Settings
 from src.data.data_fetcher import get_stock_data, get_macro_data
 from src.gemini_api.analysis_engine import GeminiAnalysisEngine
+from src.utils.api_key_manager import APIKeyManager
 
 
 def wait_for_rate_limit_reset(retry_delay):
@@ -70,14 +71,16 @@ def run_overnight_analysis():
     print(f"\n🕐 Start Time: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
 
     load_dotenv()
-    api_key = os.getenv('GEMINI_API_KEY')
 
-    if not api_key:
-        print("\n❌ ERROR: GEMINI_API_KEY not found in .env file")
+    # Initialize API Key Manager
+    try:
+        api_key_manager = APIKeyManager()
+    except ValueError as e:
+        print(f"\n❌ ERROR: {e}")
         return
 
-    print(f"✓ API Key loaded")
     print(f"✓ Model: {Settings.GEMINI_MODEL}")
+    print(f"✓ Using {api_key_manager.get_key_count()} API key(s)")
 
     tickers = Settings.DEFAULT_TICKERS[:100]
     total_tickers = len(tickers)
@@ -90,7 +93,12 @@ def run_overnight_analysis():
     print(f"  • Daily Limit: 1,500 requests (using {total_tickers * 3 + 1})")
 
     print("\n🤖 Initializing Gemini Analysis Engine...")
-    engine = GeminiAnalysisEngine(api_key, Settings.GEMINI_MODEL, rate_limit_delay=12)
+    # Adjust rate limit delay based on number of API keys
+    # With multiple keys, we can be more aggressive since we rotate on rate limits
+    rate_delay = 12 if api_key_manager.get_key_count() == 1 else 6
+    print(f"✓ Rate limit delay: {rate_delay} seconds (optimized for {api_key_manager.get_key_count()} key(s))")
+
+    engine = GeminiAnalysisEngine(api_key_manager, Settings.GEMINI_MODEL, rate_limit_delay=rate_delay)
     print("✓ Engine ready\n")
 
     results = []
