@@ -4,3 +4,4 @@ requests
 PySimpleGUI
 python-dotenv
 schedule
+tqdm

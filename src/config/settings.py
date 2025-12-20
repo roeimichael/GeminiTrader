@@ -1,17 +1,17 @@
 class Settings:
     GEMINI_MODEL = 'gemini-2.5-flash'
-    ANALYSIS_TIME_UTC = '13:00'
     OUTPUT_CSV_FILENAME = 'stock_analysis_results.csv'
-    LOG_FILE_NAME = 'gemini_trader.log'
+
+    # 50 stocks across 5 sectors (10 stocks per sector)
     DEFAULT_TICKERS = [
-        'AAPL', 'MSFT', 'GOOGL', 'NVDA', 'META', 'AVGO', 'ADBE', 'CRM', 'INTC', 'AMD',
-        'UNH', 'JNJ', 'LLY', 'ABBV', 'MRK', 'TMO', 'ABT', 'DHR', 'PFE', 'BMY',
-        'JPM', 'BAC', 'WFC', 'GS', 'MS', 'BLK', 'SCHW', 'AXP', 'C', 'USB',
-        'AMZN', 'TSLA', 'HD', 'MCD', 'NKE', 'SBUX', 'TGT', 'LOW', 'BKNG', 'CMG',
-        'XOM', 'CVX', 'COP', 'SLB', 'BA', 'CAT', 'UNP', 'RTX', 'HON', 'GE',
-        'ORCL', 'CSCO', 'IBM', 'TXN', 'QCOM', 'NOW', 'SHOP', 'SNOW', 'NET', 'DDOG',
-        'GILD', 'AMGN', 'REGN', 'VRTX', 'BIIB', 'ISRG', 'ELV', 'CVS', 'CI', 'HUM',
-        'V', 'MA', 'PYPL', 'SQ', 'COIN', 'SOFI', 'ALLY', 'COF', 'DFS', 'TROW',
-        'WMT', 'COST', 'PG', 'KO', 'PEP', 'PM', 'MO', 'EL', 'CL', 'UL',
-        'LMT', 'NOC', 'GD', 'LUV', 'DAL', 'UAL', 'FDX', 'UPS', 'NSC', 'CSX'
+        # Technology
+        'AAPL', 'MSFT', 'GOOGL', 'NVDA', 'META', 'AVGO', 'ADBE', 'CRM', 'ORCL', 'CSCO',
+        # Healthcare
+        'UNH', 'JNJ', 'LLY', 'ABBV', 'MRK', 'TMO', 'ABT', 'PFE', 'AMGN', 'GILD',
+        # Financial
+        'JPM', 'BAC', 'WFC', 'GS', 'MS', 'BLK', 'SCHW', 'AXP', 'C', 'V',
+        # Consumer
+        'AMZN', 'TSLA', 'HD', 'MCD', 'NKE', 'SBUX', 'TGT', 'WMT', 'COST', 'PG',
+        # Energy/Industrial
+        'XOM', 'CVX', 'COP', 'BA', 'CAT', 'UNP', 'RTX', 'HON', 'GE', 'LMT'
     ]
