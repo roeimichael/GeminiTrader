@@ -4,6 +4,7 @@ from tkinter import scrolledtext, messagebox
 from datetime import datetime
 from dotenv import load_dotenv
 import pandas as pd
+import threading
 from src.config.settings import Settings
 from src.data.data_fetcher import get_stock_data
 from src.gemini_api.simple_engine import SimpleAnalysisEngine
@@ -120,15 +121,24 @@ class StockAnalysisGUI:
         self.output_area.delete(1.0, tk.END)
 
     def safe_test_api(self):
+        if self.analysis_running:
+            messagebox.showinfo("Test Running", "A test or analysis is already in progress")
+            return
+
+        # Run in separate thread to prevent GUI freeze
+        thread = threading.Thread(target=self._run_test_api_thread, daemon=True)
+        thread.start()
+
+    def _run_test_api_thread(self):
         try:
             self.test_api()
         except Exception as e:
             self.log(f"\n⚠️  Critical Error: {str(e)}")
-            messagebox.showerror("Test Failed", f"API test failed with error:\n{str(e)}")
+            self.root.after(0, lambda: messagebox.showerror("Test Failed", f"API test failed with error:\n{str(e)}"))
 
     def test_api(self):
         if not self.api_key:
-            messagebox.showwarning("No API Key", "Please configure your API key in .env file first")
+            self.root.after(0, lambda: messagebox.showwarning("No API Key", "Please configure your API key in .env file first"))
             return
 
         self.clear_output()
@@ -142,6 +152,7 @@ class StockAnalysisGUI:
             stock_data = get_stock_data(test_ticker)
             self.log(f"✓ Stock data fetched successfully")
 
+            self.log("Calling Gemini API (this may take a few seconds)...")
             scores = self.engine.analyze_stock(test_ticker, stock_data)
 
             if all(score is not None for score in scores.values()):
@@ -151,34 +162,24 @@ class StockAnalysisGUI:
                 self.log(f"  💭 Sentiment Score:   {scores['sentiment_score']}/100")
                 self.log("\n" + "=" * 90)
                 self.log("✓ Ready to run full analysis!")
-                messagebox.showinfo("Test Passed", "API connection successful!\nReady to analyze stocks.")
+                self.root.after(0, lambda: messagebox.showinfo("Test Passed", "API connection successful!\nReady to analyze stocks."))
             else:
                 self.log(f"\n❌ API Test FAILED - Some scores missing")
                 self.log(f"  Scores: {scores}")
-                messagebox.showwarning("Test Warning", "API responded but some scores are missing.")
+                self.root.after(0, lambda: messagebox.showwarning("Test Warning", "API responded but some scores are missing."))
 
         except Exception as e:
             self.log(f"\n❌ API Test FAILED")
             self.log(f"  Error: {str(e)}")
-            messagebox.showerror("Test Failed", f"API test failed:\n{str(e)}")
+            self.root.after(0, lambda: messagebox.showerror("Test Failed", f"API test failed:\n{str(e)}"))
 
     def safe_run_analysis(self):
-        try:
-            self.run_analysis()
-        except Exception as e:
-            self.log(f"\n⚠️  Critical Error: {str(e)}")
-            messagebox.showerror("Analysis Failed", f"Analysis failed with error:\n{str(e)}")
-            self.run_btn.config(state=tk.NORMAL, bg=self.accent_blue)
-            self.test_btn.config(state=tk.NORMAL, bg=self.accent_green)
-            self.analysis_running = False
-
-    def run_analysis(self):
-        if not self.api_key:
-            messagebox.showwarning("No API Key", "Please configure your API key in .env file first")
-            return
-
         if self.analysis_running:
             messagebox.showinfo("Analysis Running", "Analysis is already in progress")
+            return
+
+        if not self.api_key:
+            messagebox.showwarning("No API Key", "Please configure your API key in .env file first")
             return
 
         response = messagebox.askyesno("Start Analysis",
@@ -187,6 +188,21 @@ class StockAnalysisGUI:
         if not response:
             return
 
+        # Run in separate thread to prevent GUI freeze
+        thread = threading.Thread(target=self._run_analysis_thread, daemon=True)
+        thread.start()
+
+    def _run_analysis_thread(self):
+        try:
+            self.run_analysis()
+        except Exception as e:
+            self.log(f"\n⚠️  Critical Error: {str(e)}")
+            self.root.after(0, lambda: messagebox.showerror("Analysis Failed", f"Analysis failed with error:\n{str(e)}"))
+            self.root.after(0, lambda: self.run_btn.config(state=tk.NORMAL, bg=self.accent_blue))
+            self.root.after(0, lambda: self.test_btn.config(state=tk.NORMAL, bg=self.accent_green))
+            self.analysis_running = False
+
+    def run_analysis(self):
         self.analysis_running = True
         self.clear_output()
         self.results = []
@@ -242,7 +258,7 @@ class StockAnalysisGUI:
 
         except Exception as e:
             self.log(f"\n⚠️  Analysis interrupted: {str(e)}")
-            messagebox.showerror("Analysis Error", f"Analysis was interrupted:\n{str(e)}")
+            self.root.after(0, lambda: messagebox.showerror("Analysis Error", f"Analysis was interrupted:\n{str(e)}"))
 
         finally:
             self.log("\n" + "=" * 90)
@@ -251,16 +267,13 @@ class StockAnalysisGUI:
             self.log(f"❌ Failed: {error_count}/{total}")
             self.log(f"\n💾 Click 'Export CSV' to save results")
 
-            self.run_btn.config(state=tk.NORMAL, bg=self.accent_blue)
-            self.test_btn.config(state=tk.NORMAL, bg=self.accent_green)
-            self.export_btn.config(state=tk.NORMAL, bg=self.accent_orange)
+            self.root.after(0, lambda: self.run_btn.config(state=tk.NORMAL, bg=self.accent_blue))
+            self.root.after(0, lambda: self.test_btn.config(state=tk.NORMAL, bg=self.accent_green))
+            self.root.after(0, lambda: self.export_btn.config(state=tk.NORMAL, bg=self.accent_orange))
             self.analysis_running = False
 
-            messagebox.showinfo("Analysis Complete",
-                              f"Analysis finished!\n\n"
-                              f"Successful: {success_count}/{total}\n"
-                              f"Failed: {error_count}/{total}\n\n"
-                              f"Click 'Export CSV' to save results.")
+            msg = f"Analysis finished!\n\nSuccessful: {success_count}/{total}\nFailed: {error_count}/{total}\n\nClick 'Export CSV' to save results."
+            self.root.after(0, lambda: messagebox.showinfo("Analysis Complete", msg))
 
     def safe_export_csv(self):
         try:
