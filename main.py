@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 import pandas as pd
 import threading
 from src.config.settings import Settings
-from src.data.data_fetcher import get_stock_data
 from src.gemini_api.simple_engine import SimpleAnalysisEngine
 
 
@@ -149,11 +148,8 @@ class StockAnalysisGUI:
             test_ticker = Settings.DEFAULT_TICKERS[0]
             self.log(f"Testing with {test_ticker}...\n")
 
-            stock_data = get_stock_data(test_ticker)
-            self.log(f"✓ Stock data fetched successfully")
-
             self.log("Calling Gemini API (this may take a few seconds)...")
-            scores = self.engine.analyze_stock(test_ticker, stock_data)
+            scores = self.engine.analyze_stock(test_ticker)
 
             if all(score is not None for score in scores.values()):
                 self.log(f"\n✅ API Test PASSED!\n")
@@ -224,8 +220,7 @@ class StockAnalysisGUI:
                 self.log(f"\n[{i}/{total}] 🔄 Analyzing {ticker}...")
 
                 try:
-                    stock_data = get_stock_data(ticker)
-                    scores = self.engine.analyze_stock(ticker, stock_data)
+                    scores = self.engine.analyze_stock(ticker)
 
                     if all(score is not None for score in scores.values()):
                         self.log(f"  ✅ F:{scores['fundamental_score']} T:{scores['technical_score']} S:{scores['sentiment_score']}")
