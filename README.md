@@ -35,8 +35,34 @@ print(result["final_recommendation"])
 
 See `examples/` for more usage patterns.
 
+## Two Frameworks Available
+
+### 1. Simple Agents (Recommended for Getting Started)
+Clean, modular framework for custom agent debates. Perfect for stock selection and collaborative decision-making.
+
+- Minimal dependencies (requests, dotenv)
+- Easy to extend
+- Fast setup
+- Great for learning
+
+```python
+from simple_agents import StockSelectorAgent, AgentOrchestrator
+
+analyst = StockSelectorAgent(name="Analyst", role="Expert",
+                             selection_criteria="Focus on growth stocks")
+orch = AgentOrchestrator().add_agent(analyst)
+results = orch.run_full_analysis()
+```
+
+See **SIMPLE_AGENTS_GUIDE.md** for quick start.
+
+### 2. TradingAgents (Advanced Multi-Agent System)
+Comprehensive trading analysis with pre-built specialists.
+
+See **COMPLETE_GUIDE.md** for details.
+
 ## Documentation
 
-- **COMPLETE_GUIDE.md** - Full system explanation
+- **SIMPLE_AGENTS_GUIDE.md** - Quick start guide
+- **COMPLETE_GUIDE.md** - Full TradingAgents system
 - **TRADINGAGENTS_README.md** - Technical architecture
-- **agent_prompts.json** - All agent prompts
