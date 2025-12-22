@@ -216,7 +216,7 @@ GeminiTrader/
 - When to use: Quick stock checks, testing API
 - NOT the multi-agent system
 
-**`src/tradingagents/graph/trading_graph.py`** - Multi-Agent System Entry
+**`tradingagents/graph/trading_graph.py`** - Multi-Agent System Entry
 - What: **THIS IS THE MAIN FILE** for the multi-agent system
 - Class: `TradingAgentsGraph`
 - What it does:
@@ -228,7 +228,7 @@ GeminiTrader/
 
 #### Configuration Files
 
-**`src/tradingagents/default_config.py`**
+**`tradingagents/default_config.py`**
 ```python
 DEFAULT_CONFIG = {
     "llm_provider": "google",              # Use Gemini
@@ -256,7 +256,7 @@ ALPHA_VANTAGE_API_KEY=your_key_here  # Optional
 
 #### Agent Definitions
 
-**`src/tradingagents/agents/analysts/`**
+**`tradingagents/agents/analysts/`**
 - `market_analyst.py`: Technical indicators expert
 - `fundamentals_analyst.py`: Financial statements expert
 - `news_analyst.py`: News analysis expert
@@ -267,7 +267,7 @@ Each file:
 - Lists available tools
 - Returns a function that makes API calls to Gemini
 
-**`src/tradingagents/agents/researchers/`**
+**`tradingagents/agents/researchers/`**
 - `bull_researcher.py`: Builds bullish investment case
 - `bear_researcher.py`: Builds bearish counter-case
 
@@ -277,39 +277,39 @@ These agents:
 - Debate with each other
 - Use memory to improve arguments
 
-**`src/tradingagents/agents/managers/`**
+**`tradingagents/agents/managers/`**
 - `research_manager.py`: Makes final investment decision (BUY/HOLD/SELL)
 - `risk_manager.py`: Makes final risk assessment
 
 These use the **deep thinking model** (`gemini-1.5-pro`) for complex reasoning.
 
-**`src/tradingagents/agents/risk_mgmt/`**
+**`tradingagents/agents/risk_mgmt/`**
 - `aggresive_debator.py`: Argues for aggressive position sizing
 - `conservative_debator.py`: Argues for conservative risk management
 - `neutral_debator.py`: Provides balanced perspective
 
-**`src/tradingagents/agents/trader/`**
+**`tradingagents/agents/trader/`**
 - `trader.py`: Converts investment decision into trade plan (entry, exit, stop-loss, position size)
 
 #### Agent Utilities
 
-**`src/tradingagents/agents/utils/agent_utils.py`**
+**`tradingagents/agents/utils/agent_utils.py`**
 - Defines all tool functions agents can use
 - Tools like `get_stock_data()`, `get_fundamentals()`, etc.
 - These are wrappers that route to actual data sources
 
-**`src/tradingagents/agents/utils/agent_states.py`**
+**`tradingagents/agents/utils/agent_states.py`**
 - Defines the shared state structure
 - `AgentState`: The message history and data all agents share
 - `InvestDebateState`: Bull vs Bear debate tracking
 - `RiskDebateState`: Risk debate tracking
 
-**`src/tradingagents/agents/utils/memory.py`**
+**`tradingagents/agents/utils/memory.py`**
 - `FinancialSituationMemory`: Stores past analysis for learning
 - Helps agents remember similar situations
 - Stored in `results/` directory
 
-**`src/tradingagents/agents/utils/*_tools.py`**
+**`tradingagents/agents/utils/*_tools.py`**
 - `core_stock_tools.py`: Stock price and volume tools
 - `technical_indicators_tools.py`: RSI, MACD, Bollinger Bands, etc.
 - `fundamental_data_tools.py`: Balance sheet, income statement, etc.
@@ -317,41 +317,41 @@ These use the **deep thinking model** (`gemini-1.5-pro`) for complex reasoning.
 
 #### Data Fetching System
 
-**`src/tradingagents/dataflows/interface.py`** - **KEY FILE**
+**`tradingagents/dataflows/interface.py`** - **KEY FILE**
 - Routes tool calls to appropriate data vendor
 - Implements fallback logic (if alpha_vantage fails, try yfinance)
 - Example: `route_to_vendor("get_stock_data", ticker="AAPL")`
 
-**`src/tradingagents/dataflows/y_finance.py`**
+**`tradingagents/dataflows/y_finance.py`**
 - Yahoo Finance integration (FREE, no API key)
 - Provides: stock prices, indicators, fundamentals, insider transactions
 
-**`src/tradingagents/dataflows/alpha_vantage*.py`**
+**`tradingagents/dataflows/alpha_vantage*.py`**
 - Alpha Vantage integration (free tier: 25 calls/day)
 - Provides: fundamentals, news, insider data
 - More comprehensive than yfinance
 
-**`src/tradingagents/dataflows/google.py`**
+**`tradingagents/dataflows/google.py`**
 - Google News search integration
 - Provides: recent news articles
 
 #### Workflow Orchestration
 
-**`src/tradingagents/graph/setup.py`** - `GraphSetup` class
+**`tradingagents/graph/setup.py`** - `GraphSetup` class
 - Builds the LangGraph workflow
 - Connects agents in sequence
 - Adds conditional edges (when to continue debate, when to use tools, etc.)
 
-**`src/tradingagents/graph/conditional_logic.py`** - `ConditionalLogic` class
+**`tradingagents/graph/conditional_logic.py`** - `ConditionalLogic` class
 - Decides: Should analyst call more tools or move to next agent?
 - Decides: Should bull/bear continue debating or move to manager?
 - Decides: Should risk debate continue or finish?
 
-**`src/tradingagents/graph/propagation.py`** - `Propagator` class
+**`tradingagents/graph/propagation.py`** - `Propagator` class
 - Handles state updates as it flows through agents
 - Ensures all agents see previous agents' work
 
-**`src/tradingagents/graph/signal_processing.py`** - `SignalProcessor` class
+**`tradingagents/graph/signal_processing.py`** - `SignalProcessor` class
 - Extracts actionable trading signals from final recommendation
 - Parses BUY/SELL/HOLD decisions
 - Formats for downstream systems
@@ -465,7 +465,7 @@ python run_trading_agents.py
 
 ### Step 3: Customize Configuration
 
-Edit `src/tradingagents/default_config.py`:
+Edit `tradingagents/default_config.py`:
 
 ```python
 # More debate rounds = deeper analysis
@@ -893,6 +893,6 @@ You can modify these prompts in the respective agent files.
 
 For technical details about agent architecture, see `TRADINGAGENTS_README.md`.
 
-For questions about specific files or functions, the code is well-commented - check the actual source files in `src/tradingagents/`.
+For questions about specific files or functions, the code is well-commented - check the actual source files in `tradingagents/`.
 
 Happy trading!
