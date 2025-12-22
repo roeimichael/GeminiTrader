@@ -680,7 +680,7 @@ User: graph.run(ticker="AAPL", trade_date="2025-12-22")
 │  │  └─ API Call #3 to Gemini:
 │  │     Prompt: "Here are the indicators: RSI=65, MACD=crossover up. Analyze."
 │  │     Response: "Based on RSI of 65, AAPL is in bullish territory..." [DONE]
-│  │     ✓ Market report saved to state
+│  │     DONE: Market report saved to state
 │  │
 │  ├─ Fundamentals Analyst
 │  │  ├─ API Call #4 to Gemini:
@@ -694,7 +694,7 @@ User: graph.run(ticker="AAPL", trade_date="2025-12-22")
 │  │  └─ API Call #5 to Gemini:
 │  │     Prompt: "Here's the fundamental data: [JSON]. Analyze."
 │  │     Response: "AAPL shows P/E of 28.5, revenue growth of 8%..." [DONE]
-│  │     ✓ Fundamentals report saved to state
+│  │     DONE: Fundamentals report saved to state
 │  │
 │  └─ (News and Social analysts run similarly... skipped for brevity)
 │
@@ -710,7 +710,7 @@ User: graph.run(ticker="AAPL", trade_date="2025-12-22")
 │  │     Response: "AAPL presents strong growth opportunity because: 1) Technical
 │  │               momentum is positive with RSI showing strength, 2) Revenue growth
 │  │               of 8% exceeds sector average..." [DONE]
-│  │     ✓ Bull argument saved to debate state
+│  │     DONE: Bull argument saved to debate state
 │  │
 │  ├─ Bear Researcher
 │  │  └─ API Call #11 to Gemini:
@@ -721,7 +721,7 @@ User: graph.run(ticker="AAPL", trade_date="2025-12-22")
 │  │     Response: "While the bull makes valid points, significant risks exist:
 │  │               1) P/E of 28.5 is 15% above sector average suggesting overvaluation,
 │  │               2) Regulatory pressures in EU could impact margins..." [DONE]
-│  │     ✓ Bear argument saved to debate state
+│  │     DONE: Bear argument saved to debate state
 │  │
 │  └─ (Debate rounds continue if max_debate_rounds > 1)
 │
@@ -739,7 +739,7 @@ User: graph.run(ticker="AAPL", trade_date="2025-12-22")
 │                   After reviewing all analyses and debate, the bull case is stronger.
 │                   While P/E is elevated, the technical momentum and revenue growth
 │                   support a BUY recommendation with target of $190..." [DONE]
-│        ✓ Investment decision saved to state
+│        DONE: Investment decision saved to state
 │
 ├─ Phase 4: Trade Execution Planning
 │  │
@@ -755,7 +755,7 @@ User: graph.run(ticker="AAPL", trade_date="2025-12-22")
 │                   - Risk/Reward: 2.7:1
 │                   - Position Size: 5% of portfolio
 │                   - Timeframe: 3-6 months" [DONE]
-│        ✓ Trade plan saved to state
+│        DONE: Trade plan saved to state
 │
 ├─ Phase 5: Risk Debate
 │  │
@@ -812,7 +812,7 @@ User: graph.run(ticker="AAPL", trade_date="2025-12-22")
 
                     Recommendation: PROCEED WITH BUY at recommended position size." [DONE]
 
-         ✓ Final recommendation returned to user
+         DONE: Final recommendation returned to user
 
 Total API Calls: 17
 Total Time: ~45 seconds
@@ -895,4 +895,4 @@ For technical details about agent architecture, see `TRADINGAGENTS_README.md`.
 
 For questions about specific files or functions, the code is well-commented - check the actual source files in `src/tradingagents/`.
 
-Happy trading! 🚀
+Happy trading!
