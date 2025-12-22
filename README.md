@@ -1,44 +1,42 @@
-# GeminiTrader - AI Stock Analysis
+# GeminiTrader
 
-Simple stock analysis tool using Google's Gemini AI.
+Multi-agent stock analysis system powered by Google Gemini AI.
 
-## Setup
+## Overview
 
-1. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-2. Create `.env` file with your Gemini API key:
-```bash
-GEMINI_API_KEY=your_gemini_api_key_here
-```
-
-3. Run the application:
-```bash
-python main.py
-```
+GeminiTrader is an intelligent trading analysis framework that uses multiple AI agents to analyze stocks from different perspectives. Each agent specializes in a specific aspect and they collaborate to reach investment decisions.
 
 ## Features
 
-- Analyzes 50 stocks across 5 sectors
-- Uses Gemini AI for fundamental, technical, and sentiment analysis
-- Dark theme GUI with live progress updates
-- Export results to CSV
+- Multi-agent analysis with specialized roles
+- Bull vs Bear debate mechanism
+- Risk assessment from multiple perspectives
+- Powered by Google Gemini
+- Multiple data sources with automatic fallback
+- Configurable debate rounds
+- Memory system for learning
 
-## Getting a Gemini API Key
+## Quick Start
 
-1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Sign in with your Google account
-3. Click "Create API Key"
-4. Copy the key to your `.env` file
+```bash
+pip install -r requirements.txt
+cp .env.example .env
+# Edit .env and add GOOGLE_API_KEY=your_key
+```
 
-## Usage
+```python
+from tradingagents.graph.trading_graph import TradingAgentsGraph
+from datetime import datetime
 
-1. Click "Test API" to verify your connection
-2. Click "Run Analysis" to analyze all stocks
-3. Click "Export CSV" to save results
+graph = TradingAgentsGraph(selected_analysts=["market", "fundamentals"])
+result = graph.run(ticker="AAPL", trade_date=datetime.now().strftime("%Y-%m-%d"))
+print(result["final_recommendation"])
+```
 
-## Customizing Prompts
+See `examples/` for more usage patterns.
 
-Edit `prompts.json` to customize the analysis prompts. Use `{ticker}` as a placeholder for the stock symbol.
+## Documentation
+
+- **COMPLETE_GUIDE.md** - Full system explanation
+- **TRADINGAGENTS_README.md** - Technical architecture
+- **agent_prompts.json** - All agent prompts
