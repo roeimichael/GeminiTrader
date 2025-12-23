@@ -55,8 +55,8 @@ Interactive menu to:
 ### Example 1: Initialize Specific Agents
 
 ```python
-from tradingagents.agent_pool import AgentPool
-from tradingagents.config import DEFAULT_CONFIG
+from src.tradingagents.agent_pool import AgentPool
+from src.tradingagents.config import DEFAULT_CONFIG
 
 pool = AgentPool(DEFAULT_CONFIG)
 
@@ -75,7 +75,7 @@ print(f"Active agents: {len(active)}")
 ### Example 2: Browse Available Agents
 
 ```python
-from tradingagents.agent_pool import AgentRegistry
+from src.tradingagents.agent_pool import AgentRegistry
 
 # Get all agents
 all_agents = AgentRegistry.list_all_agents()
@@ -197,7 +197,7 @@ def create_my_analyst(llm):
 Edit `tradingagents/agent_pool.py`:
 
 ```python
-from tradingagents.agents.analysts.my_analyst import create_my_analyst
+from src.tradingagents.agents.analysts.my_analyst import create_my_analyst
 
 class AgentRegistry:
     AGENT_TYPES = {

@@ -181,7 +181,7 @@ GeminiTrader/
 │   │   ├── simple_engine.py         # Simple 3-prompt analysis
 │   │   └── prompt_manager.py        # Loads prompts from prompts.json
 │   └── tradingagents/               # MULTI-AGENT SYSTEM (the complex one)
-│       ├── default_config.py        # Configuration for TradingAgents
+│       ├── config.py                # Configuration for TradingAgents
 │       ├── agents/                  # All agent definitions
 │       │   ├── analysts/            # Data collection agents
 │       │   ├── researchers/         # Bull & Bear debate agents
@@ -228,7 +228,7 @@ GeminiTrader/
 
 #### Configuration Files
 
-**`tradingagents/default_config.py`**
+**`tradingagents/config.py`**
 ```python
 DEFAULT_CONFIG = {
     "llm_provider": "google",              # Use Gemini
@@ -465,7 +465,7 @@ python run_trading_agents.py
 
 ### Step 3: Customize Configuration
 
-Edit `tradingagents/default_config.py`:
+Edit `tradingagents/config.py`:
 
 ```python
 # More debate rounds = deeper analysis
@@ -536,7 +536,7 @@ print(result["market_report"])
 
 ```python
 from src.tradingagents.graph.trading_graph import TradingAgentsGraph
-from src.tradingagents.default_config import DEFAULT_CONFIG
+from src.tradingagents.config import DEFAULT_CONFIG
 
 # Create custom config
 config = DEFAULT_CONFIG.copy()
@@ -824,7 +824,7 @@ Total Cost: ~$0.003 (with hybrid free/pro model setup)
 ## Key Takeaways
 
 ### Question 1: Can I use Gemini instead of GPT?
-**YES!** The system already supports Gemini. It's configured in `default_config.py` with `"llm_provider": "google"`.
+**YES!** The system already supports Gemini. It's configured in `config.py` with `"llm_provider": "google"`.
 
 ### Question 2: Can I set up different "personas" with prompts?
 **YES!** Each agent has its own system prompt that defines its role:
@@ -855,7 +855,7 @@ You can modify these prompts in the respective agent files.
 - **Agents:** Define personas and prompts (`agents/` folder)
 - **Tools:** Fetch data from various sources (`dataflows/` folder)
 - **Graph:** Orchestrate the workflow (`graph/` folder)
-- **Config:** Customize behavior (`default_config.py`)
+- **Config:** Customize behavior (`config.py`)
 - **Entry:** Start here (`trading_graph.py`)
 
 ---
