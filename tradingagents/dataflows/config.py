@@ -1,4 +1,4 @@
-import src.tradingagents.default_config as default_config
+from tradingagents.config import DEFAULT_CONFIG
 from typing import Dict, Optional
 
 # Use default config but allow it to be overridden
@@ -10,7 +10,7 @@ def initialize_config():
     """Initialize the configuration with default values."""
     global _config, DATA_DIR
     if _config is None:
-        _config = default_config.DEFAULT_CONFIG.copy()
+        _config = DEFAULT_CONFIG.copy()
         DATA_DIR = _config["data_dir"]
 
 
@@ -18,7 +18,7 @@ def set_config(config: Dict):
     """Update the configuration with custom values."""
     global _config, DATA_DIR
     if _config is None:
-        _config = default_config.DEFAULT_CONFIG.copy()
+        _config = DEFAULT_CONFIG.copy()
     _config.update(config)
     DATA_DIR = _config["data_dir"]
 
