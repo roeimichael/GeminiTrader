@@ -24,8 +24,8 @@ from rich import box
 from rich.align import Align
 from rich.rule import Rule
 
-from tradingagents.graph.trading_graph import TradingAgentsGraph
-from tradingagents.default_config import DEFAULT_CONFIG
+from src.tradingagents.graph.trading_graph import TradingAgentsGraph
+from src.tradingagents.default_config import DEFAULT_CONFIG
 from cli.models import AnalystType
 from cli.utils import *
 

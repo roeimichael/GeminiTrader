@@ -1,4 +1,4 @@
-from tradingagents.graph.trading_graph import TradingAgentsGraph
+from src.tradingagents.graph.trading_graph import TradingAgentsGraph
 from datetime import datetime
 
 def main():
