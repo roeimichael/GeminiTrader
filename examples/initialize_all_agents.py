@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tradingagents.agent_pool import AgentRegistry, AgentPool
-from tradingagents.config import DEFAULT_CONFIG
+from src.tradingagents.agent_pool import AgentRegistry, AgentPool
+from src.tradingagents.config import DEFAULT_CONFIG
 
 def main():
     load_dotenv()

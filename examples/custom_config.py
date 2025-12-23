@@ -1,5 +1,5 @@
-from tradingagents.graph.trading_graph import TradingAgentsGraph
-from tradingagents.config import DEFAULT_CONFIG
+from src.tradingagents.graph.trading_graph import TradingAgentsGraph
+from src.tradingagents.config import DEFAULT_CONFIG
 from datetime import datetime
 
 def main():
