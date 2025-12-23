@@ -412,7 +412,7 @@ python main.py
 Create a script `run_trading_agents.py`:
 
 ```python
-from src.tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.graph.trading_graph import TradingAgentsGraph
 
 # Initialize the multi-agent system
 graph = TradingAgentsGraph(
@@ -516,7 +516,7 @@ graph = TradingAgentsGraph(
 ### Example 1: Quick Technical Analysis Only
 
 ```python
-from src.tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.graph.trading_graph import TradingAgentsGraph
 
 # Just market analyst (technical indicators)
 graph = TradingAgentsGraph(
@@ -535,8 +535,8 @@ print(result["market_report"])
 ### Example 2: Full Analysis with Custom Config
 
 ```python
-from src.tradingagents.graph.trading_graph import TradingAgentsGraph
-from src.tradingagents.config import DEFAULT_CONFIG
+from tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.config import DEFAULT_CONFIG
 
 # Create custom config
 config = DEFAULT_CONFIG.copy()
@@ -566,7 +566,7 @@ with open("nvda_analysis.txt", "w") as f:
 ### Example 3: Batch Analysis of Multiple Stocks
 
 ```python
-from src.tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.graph.trading_graph import TradingAgentsGraph
 import json
 from datetime import datetime
 
@@ -869,7 +869,7 @@ You can modify these prompts in the respective agent files.
 
 2. **Run first multi-agent analysis:**
    ```python
-   from src.tradingagents.graph.trading_graph import TradingAgentsGraph
+   from tradingagents.graph.trading_graph import TradingAgentsGraph
    graph = TradingAgentsGraph(selected_analysts=["market"], debug=True)
    result = graph.run(ticker="AAPL", trade_date="2025-12-22")
    print(result["final_recommendation"])

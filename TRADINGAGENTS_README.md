@@ -211,7 +211,7 @@ The framework includes signal processing for final output:
 ### Basic Usage
 
 ```python
-from src.tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.graph.trading_graph import TradingAgentsGraph
 
 # Initialize with default config
 graph = TradingAgentsGraph(
@@ -229,7 +229,7 @@ print(result["final_recommendation"])
 ### Custom Configuration
 
 ```python
-from src.tradingagents.config import DEFAULT_CONFIG
+from tradingagents.config import DEFAULT_CONFIG
 
 # Modify config
 custom_config = DEFAULT_CONFIG.copy()

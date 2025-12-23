@@ -25,7 +25,7 @@ cp .env.example .env
 ```
 
 ```python
-from src.tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.graph.trading_graph import TradingAgentsGraph
 from datetime import datetime
 
 graph = TradingAgentsGraph(selected_analysts=["market", "fundamentals"])
