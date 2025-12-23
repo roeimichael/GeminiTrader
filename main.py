@@ -7,8 +7,8 @@ import json
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from src.tradingagents.agent_pool import AgentRegistry, AgentPool
-from src.tradingagents.config import DEFAULT_CONFIG
+from tradingagents.agent_pool import AgentRegistry, AgentPool
+from tradingagents.config import DEFAULT_CONFIG
 
 class AgentSelectorGUI:
     def __init__(self, root):
