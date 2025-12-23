@@ -13,7 +13,7 @@ The framework now uses **Google Gemini** as its primary LLM provider:
 - **Quick Thinking LLM**: `gemini-2.0-flash-exp` - Used for rapid analysis tasks
 - **Deep Thinking LLM**: `gemini-1.5-pro` - Used for complex reasoning and final decisions
 
-Configuration is managed in `src/tradingagents/default_config.py`.
+Configuration is managed in `src/tradingagents/config.py`.
 
 ### API Keys Required
 
@@ -161,7 +161,7 @@ The framework supports **multiple data vendors** with automatic fallback:
 
 ### Configurable Data Sources
 
-In `default_config.py`, you can configure:
+In `config.py`, you can configure:
 
 ```python
 "data_vendors": {
@@ -229,7 +229,7 @@ print(result["final_recommendation"])
 ### Custom Configuration
 
 ```python
-from src.tradingagents.default_config import DEFAULT_CONFIG
+from src.tradingagents.config import DEFAULT_CONFIG
 
 # Modify config
 custom_config = DEFAULT_CONFIG.copy()
@@ -272,7 +272,7 @@ src/tradingagents/
 │   ├── propagation.py      # State propagation
 │   ├── reflection.py       # Agent reflection
 │   └── signal_processing.py# Signal extraction
-└── default_config.py       # Default configuration
+└── config.py               # Default configuration
 ```
 
 ## Key Features
@@ -366,7 +366,7 @@ This will print:
 
 ### Getting Help
 
-- Check configuration in `src/tradingagents/default_config.py`
+- Check configuration in `src/tradingagents/config.py`
 - Enable debug mode to see detailed logs
 - Review agent state at each step
 - Verify API keys are correctly set
