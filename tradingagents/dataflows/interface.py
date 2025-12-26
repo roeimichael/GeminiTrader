@@ -20,6 +20,9 @@ from .alpha_vantage_common import AlphaVantageRateLimitError
 # Configuration and routing logic
 from .config import get_config
 
+# Caching to reduce redundant API calls during development/testing
+from .cache import cached
+
 # Tools organized by category
 TOOLS_CATEGORIES = {
     "core_stock_apis": {
@@ -138,8 +141,19 @@ def get_vendor(category: str, method: str = None) -> str:
     # Fall back to category-level configuration
     return config.get("data_vendors", {}).get(category, "default")
 
+@cached(ttl_hours=24, cache_dir="dataflows/data_cache")
 def route_to_vendor(method: str, *args, **kwargs):
-    """Route method calls to appropriate vendor implementation with fallback support."""
+    """
+    Route method calls to appropriate vendor implementation with fallback support.
+
+    IMPORTANT: Results are cached to disk for 24 hours to:
+    - Reduce redundant API calls during development/debugging
+    - Avoid hitting rate limits when testing the same ticker repeatedly
+    - Speed up development iteration (cached calls are instant)
+
+    Cache location: dataflows/data_cache/*.json
+    To clear cache: Use cache.get_cache().clear_all() or delete cache files manually
+    """
     category = get_category_for_method(method)
     vendor_config = get_vendor(category, method)
 
