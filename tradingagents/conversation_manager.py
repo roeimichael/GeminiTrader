@@ -1,335 +1,276 @@
 """
 Conversation Manager for Agent Pool
-Handles multi-agent conversations, debates, and consensus building
+Handles multi-agent conversations by interfacing with TradingAgentsGraph
 """
 import json
 from typing import Dict, List, Any
 from datetime import datetime
+
+from tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.config import DEFAULT_CONFIG
 
 
 class ConversationManager:
     """Manages conversations and debates between agents in the pool"""
 
     def __init__(self, agent_pool):
+        """
+        Initialize ConversationManager with agent pool and TradingAgentsGraph
+
+        Args:
+            agent_pool: AgentPool instance containing active agents
+        """
         self.agent_pool = agent_pool
         self.conversation_history = []
+
+        # Extract selected analyst types from agent pool
+        selected_analysts = self._extract_selected_analysts()
+
+        # Initialize TradingAgentsGraph with selected analysts
+        self.graph = TradingAgentsGraph(
+            selected_analysts=selected_analysts,
+            debug=False,
+            config=DEFAULT_CONFIG
+        )
+
+    def _extract_selected_analysts(self) -> List[str]:
+        """Extract list of selected analyst types from agent pool"""
+        analysts = []
+
+        if not self.agent_pool or not self.agent_pool.active_agents:
+            # Default to all analysts if none selected
+            return ["market", "social", "news", "fundamentals"]
+
+        # Map agent keys to analyst types
+        analyst_mapping = {
+            "market_analyst": "market",
+            "social_analyst": "social",
+            "news_analyst": "news",
+            "fundamentals_analyst": "fundamentals"
+        }
+
+        for key in self.agent_pool.active_agents.keys():
+            if key in analyst_mapping:
+                analysts.append(analyst_mapping[key])
+
+        # If no analysts found, use all
+        return analysts if analysts else ["market", "social", "news", "fundamentals"]
 
     def send_query_to_agents(self, query: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Send a query to all agents in the pool and orchestrate a debate
 
+        This method now uses the real TradingAgentsGraph to run the full
+        multi-agent analysis workflow including individual analysis, debates,
+        and final recommendations.
+
         Args:
-            query: User's question/query
-            context: Optional context (ticker, date, etc.)
+            query: User's question/query (for context/display)
+            context: Required context with 'ticker' and 'date'
 
         Returns:
             Dictionary with individual responses, debate, and final verdict
         """
-        if not self.agent_pool or not self.agent_pool.active_agents:
+        if not context or not context.get("ticker"):
             return {
-                "error": "No agents in pool. Please initialize agents first.",
+                "error": "Please provide a ticker symbol in the context.",
                 "individual_responses": [],
                 "debate": [],
-                "final_verdict": ""
+                "final_verdict": {
+                    "summary": "Error: No ticker provided. Please specify a stock ticker to analyze."
+                }
             }
 
-        # Phase 1: Get individual responses from each agent
-        individual_responses = self._collect_individual_responses(query, context)
+        ticker = context.get("ticker", "").upper()
+        trade_date = context.get("date", datetime.now().strftime("%Y-%m-%d"))
 
-        # Phase 2: Orchestrate debate between agents
-        debate_rounds = self._orchestrate_debate(query, individual_responses, context)
+        try:
+            # Run the full TradingAgentsGraph workflow
+            # This executes all agents, debates, and generates final decision
+            final_state, processed_signal = self.graph.propagate(ticker, trade_date)
 
-        # Phase 3: Generate final consensus verdict
-        final_verdict = self._generate_final_verdict(query, individual_responses, debate_rounds)
+            # Extract and format results from the final state
+            formatted_result = self._format_graph_results(query, ticker, trade_date, final_state)
 
-        # Save to history
-        conversation = {
-            "timestamp": datetime.now().isoformat(),
-            "query": query,
-            "context": context,
+            # Save to history
+            conversation = {
+                "timestamp": datetime.now().isoformat(),
+                "query": query,
+                "context": context,
+                **formatted_result
+            }
+            self.conversation_history.append(conversation)
+
+            return conversation
+
+        except Exception as e:
+            error_msg = f"Error executing analysis: {str(e)}"
+            print(f"ConversationManager Error: {error_msg}")
+            return {
+                "error": error_msg,
+                "individual_responses": [],
+                "debate": [],
+                "final_verdict": {
+                    "summary": f"Analysis failed: {error_msg}"
+                }
+            }
+
+    def _format_graph_results(self, query: str, ticker: str, trade_date: str,
+                              final_state: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Format the TradingAgentsGraph final state into conversation format
+
+        Extracts individual agent reports, debate history, and final decisions
+        from the state dictionary returned by the graph.
+
+        Args:
+            query: Original user query
+            ticker: Stock ticker analyzed
+            trade_date: Date of analysis
+            final_state: Final state dictionary from TradingAgentsGraph
+
+        Returns:
+            Formatted dictionary with individual_responses, debate, and final_verdict
+        """
+
+        # Phase 1: Extract individual analyst responses
+        individual_responses = []
+
+        # Market Analyst
+        if final_state.get("market_report"):
+            individual_responses.append({
+                "agent": "Market Analyst",
+                "category": "analysts",
+                "perspective": "Technical analysis and market indicators",
+                "response": final_state["market_report"]
+            })
+
+        # Fundamentals Analyst
+        if final_state.get("fundamentals_report"):
+            individual_responses.append({
+                "agent": "Fundamentals Analyst",
+                "category": "analysts",
+                "perspective": "Financial statements and company fundamentals",
+                "response": final_state["fundamentals_report"]
+            })
+
+        # News Analyst
+        if final_state.get("news_report"):
+            individual_responses.append({
+                "agent": "News Analyst",
+                "category": "analysts",
+                "perspective": "News and current events analysis",
+                "response": final_state["news_report"]
+            })
+
+        # Social Media Analyst
+        if final_state.get("sentiment_report"):
+            individual_responses.append({
+                "agent": "Social Media Analyst",
+                "category": "analysts",
+                "perspective": "Social sentiment and public perception",
+                "response": final_state["sentiment_report"]
+            })
+
+        # Phase 2: Extract debate rounds
+        debate_rounds = []
+
+        # Investment Debate (Bull vs Bear)
+        investment_debate = final_state.get("investment_debate_state", {})
+        if investment_debate:
+            debate_rounds.append({
+                "round": 1,
+                "topic": "Investment Opportunity Debate (Bull vs Bear)",
+                "exchanges": [
+                    {
+                        "speaker": "Bull Researcher",
+                        "statement": investment_debate.get("bull_history", "No bull analysis available")
+                    },
+                    {
+                        "speaker": "Bear Researcher",
+                        "statement": investment_debate.get("bear_history", "No bear analysis available")
+                    },
+                    {
+                        "speaker": "Research Manager (Judge)",
+                        "statement": investment_debate.get("judge_decision", "No judge decision available")
+                    }
+                ]
+            })
+
+        # Trader Analysis
+        if final_state.get("trader_investment_plan"):
+            debate_rounds.append({
+                "round": 2,
+                "topic": "Trade Execution Plan",
+                "exchanges": [
+                    {
+                        "speaker": "Trader",
+                        "statement": final_state["trader_investment_plan"]
+                    }
+                ]
+            })
+
+        # Risk Debate (Risky vs Safe vs Neutral)
+        risk_debate = final_state.get("risk_debate_state", {})
+        if risk_debate:
+            debate_rounds.append({
+                "round": 3,
+                "topic": "Risk Assessment Debate",
+                "exchanges": [
+                    {
+                        "speaker": "Aggressive Risk Analyst",
+                        "statement": risk_debate.get("risky_history", "No risky analysis available")
+                    },
+                    {
+                        "speaker": "Conservative Risk Analyst",
+                        "statement": risk_debate.get("safe_history", "No safe analysis available")
+                    },
+                    {
+                        "speaker": "Neutral Risk Analyst",
+                        "statement": risk_debate.get("neutral_history", "No neutral analysis available")
+                    },
+                    {
+                        "speaker": "Risk Manager (Judge)",
+                        "statement": risk_debate.get("judge_decision", "No risk manager decision available")
+                    }
+                ]
+            })
+
+        # Phase 3: Generate final verdict
+        final_verdict = self._generate_final_verdict_from_state(
+            query, ticker, trade_date, final_state, individual_responses
+        )
+
+        return {
             "individual_responses": individual_responses,
             "debate": debate_rounds,
             "final_verdict": final_verdict
         }
-        self.conversation_history.append(conversation)
 
-        return conversation
+    def _generate_final_verdict_from_state(self, query: str, ticker: str,
+                                           trade_date: str, final_state: Dict[str, Any],
+                                           individual_responses: List[Dict]) -> Dict[str, Any]:
+        """Generate final verdict from the TradingAgentsGraph final state"""
 
-    def _collect_individual_responses(self, query: str, context: Dict[str, Any]) -> List[Dict[str, str]]:
-        """Get initial response from each agent in the pool"""
-        responses = []
+        # Extract the final trade decision
+        final_decision = final_state.get("final_trade_decision", "No decision available")
+        investment_plan = final_state.get("investment_plan", "")
 
-        for key, agent_data in self.agent_pool.active_agents.items():
-            agent_info = agent_data["info"]
-            agent_name = agent_info["name"]
-            agent_category = agent_data["category"]
+        # Analyze sentiment from individual responses
+        bullish_count = 0
+        bearish_count = 0
+        neutral_count = 0
 
-            # Create a specialized prompt for each agent type
-            specialized_prompt = self._create_specialized_prompt(
-                query, agent_name, agent_category, agent_info["description"]
-            )
-
-            # Simulate agent response (in real implementation, would call the actual agent)
-            response = self._get_agent_response(
-                agent_data, specialized_prompt, context
-            )
-
-            responses.append({
-                "agent": agent_name,
-                "category": agent_category,
-                "perspective": agent_info["description"],
-                "response": response
-            })
-
-        return responses
-
-    def _create_specialized_prompt(self, query: str, agent_name: str,
-                                   category: str, description: str) -> str:
-        """Create a specialized prompt for each agent type"""
-
-        prompt = f"""You are {agent_name}, a specialized {description}.
-
-User Query: {query}
-
-Please provide your analysis from your specific perspective:
-- Focus on your area of expertise ({description})
-- Be concise but thorough
-- Highlight key insights from your perspective
-- State your recommendation clearly
-
-Your response:"""
-
-        return prompt
-
-    def _get_agent_response(self, agent_data: Dict, prompt: str,
-                           context: Dict[str, Any]) -> str:
-        """
-        Get response from a specific agent
-
-        Note: This is a simplified version. In production, you would:
-        1. Create a proper state object
-        2. Call the agent's node function
-        3. Parse the agent's response
-
-        For now, we'll create a mock response based on agent type
-        """
-        agent_name = agent_data["info"]["name"]
-        category = agent_data["category"]
-
-        # Mock responses based on agent type
-        # In production, replace with actual LLM calls through the agent
-        if category == "analysts":
-            if "Market" in agent_name:
-                return self._mock_market_analyst_response(context)
-            elif "Fundamentals" in agent_name:
-                return self._mock_fundamentals_analyst_response(context)
-            elif "News" in agent_name:
-                return self._mock_news_analyst_response(context)
-            elif "Social" in agent_name:
-                return self._mock_social_analyst_response(context)
-        elif category == "researchers":
-            if "Bull" in agent_name:
-                return self._mock_bull_researcher_response(context)
-            elif "Bear" in agent_name:
-                return self._mock_bear_researcher_response(context)
-        elif category == "risk_analysts":
-            if "Risky" in agent_name:
-                return self._mock_risky_analyst_response(context)
-            elif "Safe" in agent_name:
-                return self._mock_safe_analyst_response(context)
-            elif "Neutral" in agent_name:
-                return self._mock_neutral_analyst_response(context)
-
-        return f"As {agent_name}, I'm analyzing this from my perspective..."
-
-    # Mock response generators (replace with actual agent calls)
-    def _mock_market_analyst_response(self, context):
-        return """From a technical analysis perspective:
-- Price action shows consolidation above key support levels
-- RSI indicates neutral momentum (around 50)
-- Volume patterns suggest institutional accumulation
-- Short-term outlook: BULLISH
-Recommendation: Consider entry on pullback to support zone"""
-
-    def _mock_fundamentals_analyst_response(self, context):
-        return """From a fundamental analysis perspective:
-- P/E ratio is reasonable compared to sector average
-- Revenue growth remains strong at 12% YoY
-- Profit margins expanding due to operational efficiency
-- Balance sheet is solid with low debt-to-equity ratio
-Recommendation: STRONG BUY for long-term investors"""
-
-    def _mock_news_analyst_response(self, context):
-        return """From a news and sentiment perspective:
-- Recent earnings report exceeded expectations
-- Positive coverage from major financial outlets
-- Management guidance revised upward for next quarter
-- No major regulatory or legal concerns
-Recommendation: POSITIVE sentiment, good entry point"""
-
-    def _mock_social_analyst_response(self, context):
-        return """From a social media sentiment perspective:
-- Retail investor sentiment is moderately positive (65% bullish)
-- Discussion volume increased 40% over past week
-- Key influencers are highlighting upcoming catalysts
-- Options flow shows bullish positioning
-Recommendation: Retail sentiment supports upward move"""
-
-    def _mock_bull_researcher_response(self, context):
-        return """Building the bullish case:
-- Multiple positive catalysts aligning (earnings, product launch, sector rotation)
-- Technical breakout from multi-month consolidation
-- Strong institutional buying pressure
-- Seasonal trends favor this sector
-BULL CASE: Strong potential for 10-15% upside in coming weeks"""
-
-    def _mock_bear_researcher_response(self, context):
-        return """Building the bearish case:
-- Overall market showing signs of topping
-- Valuation stretched compared to historical averages
-- Potential headwinds from macro factors (rates, inflation)
-- Recent rally may be overdone, pullback likely
-BEAR CASE: Risk of 5-10% correction, would wait for better entry"""
-
-    def _mock_risky_analyst_response(self, context):
-        return """From an aggressive risk perspective:
-- Setup favors taking larger position size
-- Risk/reward ratio is attractive (3:1)
-- Momentum is building, don't miss the move
-- Use stops below support to manage downside
-AGGRESSIVE VIEW: Take full position, ride the momentum"""
-
-    def _mock_safe_analyst_response(self, context):
-        return """From a conservative risk perspective:
-- Start with smaller position, scale in gradually
-- Wait for confirmation of breakout/breakdown
-- Preserve capital is priority
-- Market conditions warrant caution
-CONSERVATIVE VIEW: Small position, wait for better clarity"""
-
-    def _mock_neutral_analyst_response(self, context):
-        return """From a balanced risk perspective:
-- Reasonable position size based on conviction level
-- Diversify entry points over time (DCA approach)
-- Balance upside potential with downside protection
-- Adjust size based on market conditions
-BALANCED VIEW: Moderate position, flexible approach"""
-
-    def _orchestrate_debate(self, query: str, responses: List[Dict],
-                           context: Dict[str, Any]) -> List[Dict[str, str]]:
-        """
-        Orchestrate a debate between agents about their different viewpoints
-
-        Returns list of debate rounds with each agent's contribution
-        """
-        debate_rounds = []
-
-        # Round 1: Agents present conflicting viewpoints
-        debate_rounds.append({
-            "round": 1,
-            "topic": "Initial Position Statements",
-            "exchanges": self._generate_position_statements(responses)
-        })
-
-        # Round 2: Agents challenge each other's assumptions
-        debate_rounds.append({
-            "round": 2,
-            "topic": "Challenging Assumptions",
-            "exchanges": self._generate_challenges(responses)
-        })
-
-        # Round 3: Finding common ground and disagreements
-        debate_rounds.append({
-            "round": 3,
-            "topic": "Consensus Building",
-            "exchanges": self._generate_consensus(responses)
-        })
-
-        return debate_rounds
-
-    def _generate_position_statements(self, responses: List[Dict]) -> List[Dict[str, str]]:
-        """Generate initial position statements for debate"""
-        exchanges = []
-
-        # Group by bullish vs bearish sentiment
-        bullish_agents = []
-        bearish_agents = []
-        neutral_agents = []
-
-        for resp in responses:
+        for resp in individual_responses:
             response_text = resp["response"].upper()
-            if "BULLISH" in response_text or "BUY" in response_text or "POSITIVE" in response_text:
-                bullish_agents.append(resp["agent"])
-            elif "BEARISH" in response_text or "SELL" in response_text or "NEGATIVE" in response_text:
-                bearish_agents.append(resp["agent"])
+            if any(word in response_text for word in ["BUY", "BULLISH", "POSITIVE", "STRONG BUY", "UPSIDE"]):
+                bullish_count += 1
+            elif any(word in response_text for word in ["SELL", "BEARISH", "NEGATIVE", "AVOID", "DOWNSIDE"]):
+                bearish_count += 1
             else:
-                neutral_agents.append(resp["agent"])
+                neutral_count += 1
 
-        # Generate position statement
-        if bullish_agents:
-            exchanges.append({
-                "speaker": "Bullish Coalition",
-                "agents": bullish_agents,
-                "statement": f"We ({', '.join(bullish_agents)}) see strong positive indicators suggesting this is a good opportunity. The fundamentals, technicals, and sentiment all align favorably."
-            })
-
-        if bearish_agents:
-            exchanges.append({
-                "speaker": "Bearish Coalition",
-                "agents": bearish_agents,
-                "statement": f"However, we ({', '.join(bearish_agents)}) urge caution. There are significant risks and potential headwinds that shouldn't be ignored."
-            })
-
-        if neutral_agents:
-            exchanges.append({
-                "speaker": "Balanced Perspective",
-                "agents": neutral_agents,
-                "statement": f"We ({', '.join(neutral_agents)}) see merit in both viewpoints and suggest a measured approach that considers both opportunities and risks."
-            })
-
-        return exchanges
-
-    def _generate_challenges(self, responses: List[Dict]) -> List[Dict[str, str]]:
-        """Generate challenges between different viewpoints"""
-        return [
-            {
-                "speaker": "Bear Researcher",
-                "statement": "While the bullish indicators are noted, we must consider that current valuations may already price in the positive news. What if the market is ahead of itself?"
-            },
-            {
-                "speaker": "Market Analyst",
-                "statement": "The technical setup suggests strong support at current levels. Even if there's a pullback, risk is well-defined, making this a favorable risk/reward setup."
-            },
-            {
-                "speaker": "Risk Analyst",
-                "statement": "Position sizing is crucial here. We need to balance conviction with prudent risk management. Not all-in, not sitting out completely."
-            }
-        ]
-
-    def _generate_consensus(self, responses: List[Dict]) -> List[Dict[str, str]]:
-        """Generate consensus-building discussion"""
-        return [
-            {
-                "speaker": "Research Manager",
-                "statement": "After hearing all perspectives, here's what we agree on: The opportunity exists, but risk management is key. We should have a position, but size it appropriately."
-            },
-            {
-                "speaker": "Group Consensus",
-                "statement": "Common ground: Take a position, but with defined risk parameters. Start with moderate size, scale based on price action. Set clear stop-loss levels. Monitor news and technical levels closely."
-            }
-        ]
-
-    def _generate_final_verdict(self, query: str, responses: List[Dict],
-                                debate: List[Dict]) -> Dict[str, Any]:
-        """Generate final consensus verdict with all perspectives"""
-
-        # Count sentiment
-        bullish_count = sum(1 for r in responses if any(word in r["response"].upper()
-                           for word in ["BULLISH", "BUY", "POSITIVE", "STRONG"]))
-        bearish_count = sum(1 for r in responses if any(word in r["response"].upper()
-                           for word in ["BEARISH", "SELL", "NEGATIVE", "CAUTION"]))
-
-        total = len(responses)
+        total = len(individual_responses)
         bullish_pct = (bullish_count / total * 100) if total > 0 else 0
 
         # Determine overall recommendation
@@ -340,7 +281,7 @@ BALANCED VIEW: Moderate position, flexible approach"""
             overall = "BUY"
             confidence = "Moderate"
         elif bullish_pct >= 30:
-            overall = "HOLD / WAIT"
+            overall = "HOLD"
             confidence = "Low"
         else:
             overall = "AVOID / SELL"
@@ -348,60 +289,71 @@ BALANCED VIEW: Moderate position, flexible approach"""
 
         verdict = {
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "ticker": ticker,
+            "trade_date": trade_date,
             "overall_recommendation": overall,
             "confidence_level": confidence,
             "sentiment_breakdown": {
                 "bullish": bullish_count,
                 "bearish": bearish_count,
-                "neutral": total - bullish_count - bearish_count,
+                "neutral": neutral_count,
                 "bullish_percentage": round(bullish_pct, 1)
             },
-            "key_points": [
-                "Multiple perspectives considered from technical, fundamental, and sentiment analysis",
-                f"{bullish_count} out of {total} agents recommend positive action",
-                "Risk management emphasized by all agents",
-                "Timing considerations discussed thoroughly"
-            ],
-            "action_items": [
-                "Define position size based on risk tolerance",
-                "Set stop-loss levels below key support",
-                "Monitor upcoming catalysts (earnings, news)",
-                "Review position after initial entry"
-            ],
-            "summary": self._generate_summary_text(overall, bullish_pct, responses)
+            "final_trade_decision": final_decision,
+            "investment_plan": investment_plan,
+            "summary": self._generate_summary_text(
+                query, ticker, overall, bullish_pct,
+                individual_responses, final_decision
+            )
         }
 
         return verdict
 
-    def _generate_summary_text(self, recommendation: str, bullish_pct: float,
-                               responses: List[Dict]) -> str:
+    def _generate_summary_text(self, query: str, ticker: str, recommendation: str,
+                               bullish_pct: float, responses: List[Dict],
+                               final_decision: str) -> str:
         """Generate human-readable summary"""
 
         summary = f"""
+ANALYSIS FOR {ticker}
+Query: {query}
+
 FINAL CONSENSUS: {recommendation}
 
-After comprehensive analysis from {len(responses)} specialized agents and thorough debate,
+After comprehensive analysis from {len(responses)} specialized agents and multi-round debates,
 here's our unified recommendation:
 
-{bullish_pct:.0f}% of agents see this as a favorable opportunity. The consensus view is that
-there is merit to taking a position, but with appropriate risk management.
+SENTIMENT ANALYSIS:
+{bullish_pct:.0f}% of our analyst team sees this as a favorable opportunity.
 
-KEY CONSIDERATIONS:
-• Technical indicators suggest defined risk/reward setup
-• Fundamentals support the investment thesis
-• Sentiment is generally positive but not euphoric
-• Timing appears reasonable given upcoming catalysts
+AGENT PERSPECTIVES:
+{self._summarize_agent_perspectives(responses)}
 
-RECOMMENDED ACTION:
-Take a position sized appropriately to your risk tolerance. Use a scaled entry approach
-if possible. Set stop-losses below key technical support levels. Monitor the position
-actively, especially around earnings or major news events.
+FINAL DECISION FROM TRADING SYSTEM:
+{final_decision}
 
-This recommendation reflects the collective wisdom of our agent pool, balancing
-optimism with prudent risk management.
+RECOMMENDATION:
+This recommendation reflects the collective analysis of our multi-agent system,
+including technical analysis, fundamental research, news sentiment, social media analysis,
+and comprehensive risk assessment through multiple debate rounds.
+
+Remember: This is an AI-generated analysis for informational purposes only.
+Always conduct your own research and consult with financial advisors before making
+investment decisions.
 """
 
         return summary.strip()
+
+    def _summarize_agent_perspectives(self, responses: List[Dict]) -> str:
+        """Create a brief summary of each agent's perspective"""
+        summaries = []
+        for resp in responses:
+            # Take first 150 characters of response as summary
+            brief = resp["response"][:150].replace("\n", " ")
+            if len(resp["response"]) > 150:
+                brief += "..."
+            summaries.append(f"• {resp['agent']}: {brief}")
+        return "\n".join(summaries)
 
     def get_conversation_history(self) -> List[Dict[str, Any]]:
         """Return all conversation history"""
