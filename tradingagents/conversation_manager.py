@@ -9,6 +9,7 @@ from datetime import datetime
 from tradingagents.graph.trading_graph import TradingAgentsGraph
 from tradingagents.config import DEFAULT_CONFIG
 from tradingagents.dataflows.validation import validate_ticker_data, TickerValidationError
+from tradingagents.query_classifier import QueryClassifier
 
 
 class ConversationManager:
@@ -24,10 +25,14 @@ class ConversationManager:
         self.agent_pool = agent_pool
         self.conversation_history = []
 
+        # Initialize query classifier for intelligent agent routing
+        self.query_classifier = QueryClassifier(config=DEFAULT_CONFIG)
+
         # Extract selected analyst types from agent pool
         selected_analysts = self._extract_selected_analysts()
 
         # Initialize TradingAgentsGraph with selected analysts
+        # Note: This will be dynamically updated based on query classification
         self.graph = TradingAgentsGraph(
             selected_analysts=selected_analysts,
             debug=False,
@@ -85,7 +90,33 @@ class ConversationManager:
         ticker = context.get("ticker", "").upper()
         trade_date = context.get("date", datetime.now().strftime("%Y-%m-%d"))
 
-        # FAIL-FAST VALIDATION: Check ticker data BEFORE spinning up 12 agents
+        # PHASE -1: QUERY CLASSIFICATION (Smart Routing)
+        # Determine which agents are actually needed for this specific query
+        # This prevents running all 12 agents for simple questions
+        print(f"\n{'='*60}")
+        print(f"QUERY CLASSIFICATION (Smart Router)")
+        print(f"{'='*60}")
+
+        classification = self.query_classifier.classify_query(query, ticker)
+        selected_agents = classification["selected_agents"]
+
+        print(f"Query: {query[:100]}{'...' if len(query) > 100 else ''}")
+        print(f"Selected Agents: {', '.join(selected_agents)}")
+        print(f"Reasoning: {classification['reasoning']}")
+        print(f"Complexity: {classification['complexity']}")
+        print(f"Cost Estimate: {classification['estimated_cost']}")
+        print(f"Method: {classification['method']}")
+        print(f"{'='*60}\n")
+
+        # Recreate graph with only the necessary agents
+        # This is the key optimization: only spin up what's needed
+        self.graph = TradingAgentsGraph(
+            selected_analysts=selected_agents,
+            debug=False,
+            config=DEFAULT_CONFIG
+        )
+
+        # FAIL-FAST VALIDATION: Check ticker data BEFORE spinning up agents
         # This prevents wasting API calls and LLM costs on invalid tickers
         try:
             print(f"\n{'='*60}")
@@ -114,7 +145,8 @@ class ConversationManager:
 
         try:
             print(f"{'='*60}")
-            print(f"PHASE 1: RUNNING FULL MULTI-AGENT ANALYSIS")
+            print(f"RUNNING OPTIMIZED MULTI-AGENT ANALYSIS")
+            print(f"Agents: {', '.join(selected_agents)} ({len(selected_agents)}/{4} possible)")
             print(f"{'='*60}\n")
             # Run the full TradingAgentsGraph workflow
             # This executes all agents, debates, and generates final decision
@@ -122,6 +154,9 @@ class ConversationManager:
 
             # Extract and format results from the final state
             formatted_result = self._format_graph_results(query, ticker, trade_date, final_state)
+
+            # Add classification info to result
+            formatted_result["query_classification"] = classification
 
             # Save to history
             conversation = {
