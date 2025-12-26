@@ -42,6 +42,10 @@ from .propagation import Propagator
 from .reflection import Reflector
 from .signal_processing import SignalProcessor
 from tradingagents.dataflows.validation import validate_ticker_data, TickerValidationError
+from tradingagents.logger_config import get_logger
+
+# Initialize logger for this module
+logger = get_logger(__name__)
 
 
 class TradingAgentsGraph:
@@ -158,24 +162,36 @@ class TradingAgentsGraph:
             ),
         }
 
-    def propagate(self, company_name, trade_date):
+    def propagate(self, company_name: str, trade_date: str) -> Tuple[Dict[str, Any], str]:
         """
-        Run the trading agents graph for a company on a specific date.
+        Execute multi-agent analysis workflow for a specific stock and date
 
-        This method includes fail-fast validation to prevent running expensive
-        multi-agent workflows on invalid or inaccessible tickers.
+        Why this architecture: The multi-stage workflow ensures balanced analysis
+        by having analysts gather data, researchers debate investment thesis,
+        trader create execution plan, and risk analysts validate before final decision.
+
+        Args:
+            company_name: Stock ticker symbol (e.g., "AAPL", "MSFT")
+            trade_date: Date for analysis in YYYY-MM-DD format
+
+        Returns:
+            Tuple of (final_state, processed_signal):
+            - final_state: Complete AgentState with all analysis results
+            - processed_signal: Simplified trading signal (BUY/SELL/HOLD)
         """
 
         self.ticker = company_name
+        logger.info(f"Starting analysis for {company_name} on {trade_date}")
 
         # FAIL-FAST VALIDATION: Ensure ticker has accessible data before proceeding
-        # This is a safety net in case validation wasn't done at higher level
+        # Why: Safety net in case validation was skipped at higher level
         try:
             validate_ticker_data(company_name, trade_date)
+            logger.debug(f"Ticker {company_name} validated")
         except TickerValidationError as e:
             error_msg = f"Cannot proceed with analysis: {str(e)}"
-            print(f"VALIDATION_ERROR in TradingAgentsGraph.propagate(): {error_msg}")
-            # Return error state instead of crashing
+            logger.error(f"Validation failed: {error_msg}")
+            # Why return error state: Prevents crash, allows caller to handle gracefully
             error_state = self.propagator.create_initial_state(company_name, trade_date)
             error_state["final_trade_decision"] = f"ERROR: {error_msg}"
             error_state["market_report"] = f"Validation failed: {str(e)}"
@@ -188,19 +204,23 @@ class TradingAgentsGraph:
         args = self.propagator.get_graph_args()
 
         if self.debug:
-            # Debug mode with tracing
+            # Debug mode: Stream execution with detailed logging
+            # Why: Allows real-time monitoring during development
+            logger.debug("Running in DEBUG mode - streaming agent execution")
             trace = []
             for chunk in self.graph.stream(init_agent_state, **args):
-                if len(chunk["messages"]) == 0:
-                    pass
-                else:
+                if len(chunk["messages"]) > 0:
                     chunk["messages"][-1].pretty_print()
                     trace.append(chunk)
+                    logger.debug(f"Graph chunk received: {list(chunk.keys())}")
 
             final_state = trace[-1]
         else:
-            # Standard mode without tracing
+            # Production mode: Direct invocation without streaming
+            # Why: Faster when detailed monitoring not needed
+            logger.info("Executing graph workflow...")
             final_state = self.graph.invoke(init_agent_state, **args)
+            logger.info("Graph execution complete")
 
         # Store current state for reflection
         self.curr_state = final_state

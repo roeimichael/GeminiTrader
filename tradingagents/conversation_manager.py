@@ -1,15 +1,22 @@
 """
 Conversation Manager for Agent Pool
-Handles multi-agent conversations by interfacing with TradingAgentsGraph
+
+Handles multi-agent conversations by interfacing with TradingAgentsGraph.
+Acts as the orchestration layer between user queries and the LangGraph workflow.
 """
 import json
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from datetime import datetime
 
 from tradingagents.graph.trading_graph import TradingAgentsGraph
 from tradingagents.config import DEFAULT_CONFIG
 from tradingagents.dataflows.validation import validate_ticker_data, TickerValidationError
 from tradingagents.query_classifier import QueryClassifier
+from tradingagents.agents.utils.agent_states import AgentState
+from tradingagents.logger_config import get_logger
+
+# Initialize logger for this module
+logger = get_logger(__name__)
 
 
 class ConversationManager:
@@ -62,20 +69,30 @@ class ConversationManager:
         # If no analysts found, use all
         return analysts if analysts else ["market", "social", "news", "fundamentals"]
 
-    def send_query_to_agents(self, query: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+    def send_query_to_agents(self, query: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        Send a query to all agents in the pool and orchestrate a debate
+        Send user query to appropriate agents and orchestrate multi-agent analysis
 
-        This method now uses the real TradingAgentsGraph to run the full
-        multi-agent analysis workflow including individual analysis, debates,
-        and final recommendations.
+        This is the main entry point for the conversation system. It performs:
+        1. Query classification (determine which agents are needed)
+        2. Ticker validation (fail-fast if ticker invalid)
+        3. Graph execution (run selected agents through TradingAgentsGraph)
+        4. Result formatting (extract and structure agent outputs)
+
+        Why this approach: Validates input early to avoid wasting API calls and
+        LLM costs on invalid tickers. Uses query classification to run only
+        necessary agents (cost optimization).
 
         Args:
             query: User's question/query (for context/display)
             context: Required context with 'ticker' and 'date'
 
         Returns:
-            Dictionary with individual responses, debate, and final verdict
+            Dictionary with:
+            - individual_responses: List of agent analyses
+            - debate: Multi-round debate between agents
+            - final_verdict: Consensus recommendation
+            - query_classification: Classification metadata
         """
         if not context or not context.get("ticker"):
             return {
@@ -92,21 +109,19 @@ class ConversationManager:
 
         # PHASE -1: QUERY CLASSIFICATION (Smart Routing)
         # Determine which agents are actually needed for this specific query
-        # This prevents running all 12 agents for simple questions
-        print(f"\n{'='*60}")
-        print(f"QUERY CLASSIFICATION (Smart Router)")
-        print(f"{'='*60}")
+        # Why: Prevents running all agents for simple questions, reduces cost by 50-75%
+        logger.info("="*60)
+        logger.info("PHASE -1: Query Classification")
+        logger.info("="*60)
 
         classification = self.query_classifier.classify_query(query, ticker)
         selected_agents = classification["selected_agents"]
 
-        print(f"Query: {query[:100]}{'...' if len(query) > 100 else ''}")
-        print(f"Selected Agents: {', '.join(selected_agents)}")
-        print(f"Reasoning: {classification['reasoning']}")
-        print(f"Complexity: {classification['complexity']}")
-        print(f"Cost Estimate: {classification['estimated_cost']}")
-        print(f"Method: {classification['method']}")
-        print(f"{'='*60}\n")
+        logger.info(f"Query: {query[:100]}{'...' if len(query) > 100 else ''}")
+        logger.info(f"Selected Agents: {', '.join(selected_agents)} ({len(selected_agents)}/4 possible)")
+        logger.info(f"Reasoning: {classification['reasoning']}")
+        logger.debug(f"Classification details: {classification}")
+        logger.info("="*60)
 
         # Recreate graph with only the necessary agents
         # This is the key optimization: only spin up what's needed
@@ -117,18 +132,19 @@ class ConversationManager:
         )
 
         # FAIL-FAST VALIDATION: Check ticker data BEFORE spinning up agents
-        # This prevents wasting API calls and LLM costs on invalid tickers
+        # Why: Prevents wasting API calls and LLM costs on invalid/non-existent tickers
         try:
-            print(f"\n{'='*60}")
-            print(f"PHASE 0: PRE-FLIGHT VALIDATION")
-            print(f"{'='*60}")
+            logger.info("="*60)
+            logger.info("PHASE 0: Pre-Flight Validation")
+            logger.info("="*60)
             validation_result = validate_ticker_data(ticker, trade_date)
-            print(f"✓ Ticker '{ticker}' validated - proceeding with full analysis")
-            print(f"{'='*60}\n")
+            logger.info(f"✓ Ticker '{ticker}' validated successfully")
+            logger.debug(f"Validation result: {validation_result}")
+            logger.info("="*60)
         except TickerValidationError as e:
             error_msg = f"Ticker validation failed: {str(e)}"
-            print(f"✗ VALIDATION FAILED: {error_msg}")
-            print(f"{'='*60}\n")
+            logger.error(f"✗ VALIDATION FAILED: {error_msg}")
+            logger.info("="*60)
             return {
                 "error": error_msg,
                 "individual_responses": [],
@@ -144,13 +160,16 @@ class ConversationManager:
             }
 
         try:
-            print(f"{'='*60}")
-            print(f"RUNNING OPTIMIZED MULTI-AGENT ANALYSIS")
-            print(f"Agents: {', '.join(selected_agents)} ({len(selected_agents)}/{4} possible)")
-            print(f"{'='*60}\n")
+            logger.info("="*60)
+            logger.info(f"PHASE 1: Running Multi-Agent Analysis")
+            logger.info(f"Active Agents: {', '.join(selected_agents)} ({len(selected_agents)}/4)")
+            logger.info("="*60)
+
             # Run the full TradingAgentsGraph workflow
-            # This executes all agents, debates, and generates final decision
+            # Why: This is the core analysis engine - runs agents in parallel, orchestrates
+            # debates between bull/bear researchers and risk analysts, generates final verdict
             final_state, processed_signal = self.graph.propagate(ticker, trade_date)
+            logger.debug(f"Graph execution complete. Signal: {processed_signal}")
 
             # Extract and format results from the final state
             formatted_result = self._format_graph_results(query, ticker, trade_date, final_state)
@@ -171,7 +190,7 @@ class ConversationManager:
 
         except Exception as e:
             error_msg = f"Error executing analysis: {str(e)}"
-            print(f"ConversationManager Error: {error_msg}")
+            logger.error(f"Analysis execution failed: {error_msg}", exc_info=True)
             return {
                 "error": error_msg,
                 "individual_responses": [],
