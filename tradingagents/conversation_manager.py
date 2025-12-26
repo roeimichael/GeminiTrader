@@ -8,6 +8,7 @@ from datetime import datetime
 
 from tradingagents.graph.trading_graph import TradingAgentsGraph
 from tradingagents.config import DEFAULT_CONFIG
+from tradingagents.dataflows.validation import validate_ticker_data, TickerValidationError
 
 
 class ConversationManager:
@@ -84,7 +85,37 @@ class ConversationManager:
         ticker = context.get("ticker", "").upper()
         trade_date = context.get("date", datetime.now().strftime("%Y-%m-%d"))
 
+        # FAIL-FAST VALIDATION: Check ticker data BEFORE spinning up 12 agents
+        # This prevents wasting API calls and LLM costs on invalid tickers
         try:
+            print(f"\n{'='*60}")
+            print(f"PHASE 0: PRE-FLIGHT VALIDATION")
+            print(f"{'='*60}")
+            validation_result = validate_ticker_data(ticker, trade_date)
+            print(f"✓ Ticker '{ticker}' validated - proceeding with full analysis")
+            print(f"{'='*60}\n")
+        except TickerValidationError as e:
+            error_msg = f"Ticker validation failed: {str(e)}"
+            print(f"✗ VALIDATION FAILED: {error_msg}")
+            print(f"{'='*60}\n")
+            return {
+                "error": error_msg,
+                "individual_responses": [],
+                "debate": [],
+                "final_verdict": {
+                    "summary": f"Cannot analyze ticker '{ticker}': {str(e)}\n\n"
+                              f"Please check:\n"
+                              f"1. Ticker symbol is correct (e.g., 'AAPL', 'MSFT')\n"
+                              f"2. Company is publicly traded\n"
+                              f"3. API keys are configured correctly\n"
+                              f"4. You have internet connectivity"
+                }
+            }
+
+        try:
+            print(f"{'='*60}")
+            print(f"PHASE 1: RUNNING FULL MULTI-AGENT ANALYSIS")
+            print(f"{'='*60}\n")
             # Run the full TradingAgentsGraph workflow
             # This executes all agents, debates, and generates final decision
             final_state, processed_signal = self.graph.propagate(ticker, trade_date)

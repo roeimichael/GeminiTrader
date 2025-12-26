@@ -41,6 +41,7 @@ from .setup import GraphSetup
 from .propagation import Propagator
 from .reflection import Reflector
 from .signal_processing import SignalProcessor
+from tradingagents.dataflows.validation import validate_ticker_data, TickerValidationError
 
 
 class TradingAgentsGraph:
@@ -158,9 +159,27 @@ class TradingAgentsGraph:
         }
 
     def propagate(self, company_name, trade_date):
-        """Run the trading agents graph for a company on a specific date."""
+        """
+        Run the trading agents graph for a company on a specific date.
+
+        This method includes fail-fast validation to prevent running expensive
+        multi-agent workflows on invalid or inaccessible tickers.
+        """
 
         self.ticker = company_name
+
+        # FAIL-FAST VALIDATION: Ensure ticker has accessible data before proceeding
+        # This is a safety net in case validation wasn't done at higher level
+        try:
+            validate_ticker_data(company_name, trade_date)
+        except TickerValidationError as e:
+            error_msg = f"Cannot proceed with analysis: {str(e)}"
+            print(f"VALIDATION_ERROR in TradingAgentsGraph.propagate(): {error_msg}")
+            # Return error state instead of crashing
+            error_state = self.propagator.create_initial_state(company_name, trade_date)
+            error_state["final_trade_decision"] = f"ERROR: {error_msg}"
+            error_state["market_report"] = f"Validation failed: {str(e)}"
+            return error_state, "ABORT"
 
         # Initialize state
         init_agent_state = self.propagator.create_initial_state(
