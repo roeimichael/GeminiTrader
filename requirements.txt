@@ -1,7 +1,6 @@
 google-generativeai
 pandas
 requests
-PySimpleGUI
 python-dotenv
 schedule
 tqdm
@@ -28,3 +27,6 @@ rich
 questionary
 langchain_anthropic
 langchain-google-genai
+fastapi
+uvicorn[standard]
+python-multipart
