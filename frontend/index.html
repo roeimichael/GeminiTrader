@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeminiTrader - Multi-Agent Stock Analysis</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>GeminiTrader</h1>
+            <p class="subtitle">Multi-Agent Stock Analysis System</p>
+            <div class="status-indicator">
+                <span class="status-dot" id="apiStatus"></span>
+                <span id="apiStatusText">Checking API...</span>
+            </div>
+        </header>
+
+        <main>
+            <div class="card">
+                <h2>Configuration</h2>
+
+                <div class="form-group">
+                    <label for="ticker">Stock Ticker Symbol</label>
+                    <input
+                        type="text"
+                        id="ticker"
+                        placeholder="e.g., AAPL, MSFT, TSLA"
+                        maxlength="10"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="tradeDate">Analysis Date</label>
+                    <input
+                        type="date"
+                        id="tradeDate"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="query">Your Question</label>
+                    <textarea
+                        id="query"
+                        placeholder="e.g., Should I invest in this stock? What are the risks?"
+                        rows="3"
+                    ></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Select Analysts</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" value="market_analyst" checked>
+                            <span>Market Analyst</span>
+                            <small>Technical indicators and market trends</small>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" value="fundamentals_analyst" checked>
+                            <span>Fundamentals Analyst</span>
+                            <small>Financial statements and company fundamentals</small>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" value="news_analyst" checked>
+                            <span>News Analyst</span>
+                            <small>Recent news and current events</small>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" value="social_analyst" checked>
+                            <span>Social Media Analyst</span>
+                            <small>Social sentiment and public perception</small>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button id="initializeBtn" class="btn btn-primary">
+                        Initialize Agents
+                    </button>
+                    <button id="analyzeBtn" class="btn btn-success" disabled>
+                        Run Analysis
+                    </button>
+                    <button id="clearBtn" class="btn btn-secondary">
+                        Clear Results
+                    </button>
+                </div>
+            </div>
+
+            <div class="card results-card" id="resultsCard" style="display: none;">
+                <h2>Analysis Results</h2>
+
+                <div class="results-tabs">
+                    <button class="tab-btn active" data-tab="classification">Classification</button>
+                    <button class="tab-btn" data-tab="analysts">Analysts</button>
+                    <button class="tab-btn" data-tab="debate">Debate</button>
+                    <button class="tab-btn" data-tab="verdict">Final Verdict</button>
+                </div>
+
+                <div class="tab-content active" id="classification">
+                    <div id="classificationContent"></div>
+                </div>
+
+                <div class="tab-content" id="analysts">
+                    <div id="analystsContent"></div>
+                </div>
+
+                <div class="tab-content" id="debate">
+                    <div id="debateContent"></div>
+                </div>
+
+                <div class="tab-content" id="verdict">
+                    <div id="verdictContent"></div>
+                </div>
+            </div>
+
+            <div class="card loading-card" id="loadingCard" style="display: none;">
+                <div class="loading-spinner"></div>
+                <p class="loading-text">Running multi-agent analysis...</p>
+                <p class="loading-subtext" id="loadingSubtext">This may take 30-60 seconds</p>
+            </div>
+        </main>
+
+        <footer>
+            <p>Powered by Google Gemini AI & LangGraph</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
