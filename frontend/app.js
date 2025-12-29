@@ -87,14 +87,12 @@ function renderAgents() {
         `;
 
         Object.entries(agents).forEach(([agentId, agentInfo]) => {
-            const agentKey = `${agentId}_${category === 'trader' ? 'trader' : agentId}`;
             const isDefaultChecked = category === 'analysts';
 
             html += `
                 <label class="checkbox-label">
                     <input
                         type="checkbox"
-                        value="${agentKey}"
                         data-category="${category}"
                         data-agent-id="${agentId}"
                         ${isDefaultChecked ? 'checked' : ''}
@@ -311,8 +309,8 @@ function displayAnalysts(responses) {
 
     const html = responses.map(response => `
         <div class="result-section">
-            <h3>${response.analyst || 'Analyst'}</h3>
-            <p>${response.analysis || response.response || 'No analysis provided'}</p>
+            <h3>${response.agent || 'Analyst'}</h3>
+            <p>${response.response || 'No analysis provided'}</p>
         </div>
     `).join('');
 
@@ -327,20 +325,30 @@ function displayDebate(debate) {
         return;
     }
 
-    const html = debate.map(entry => {
-        const isBull = entry.speaker && entry.speaker.toLowerCase().includes('bull');
-        const isBear = entry.speaker && entry.speaker.toLowerCase().includes('bear');
-        const debateClass = isBull ? 'bull' : (isBear ? 'bear' : '');
-
-        return `
-            <div class="debate-entry ${debateClass}">
-                <div class="debate-header">
-                    <span class="debate-speaker">${entry.speaker || 'Speaker'}</span>
-                    <span class="debate-round">Round ${entry.round || 'N/A'}</span>
-                </div>
-                <p>${entry.argument || entry.message || 'No argument provided'}</p>
+    const html = debate.map(round => {
+        const roundHeader = `
+            <div style="margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary-color);">
+                <h3 style="color: var(--primary-color); margin: 0;">Round ${round.round}: ${round.topic || 'Debate'}</h3>
             </div>
         `;
+
+        const exchanges = round.exchanges.map(exchange => {
+            const isBull = exchange.speaker && exchange.speaker.toLowerCase().includes('bull');
+            const isBear = exchange.speaker && exchange.speaker.toLowerCase().includes('bear');
+            const debateClass = isBull ? 'bull' : (isBear ? 'bear' : '');
+
+            return `
+                <div class="debate-entry ${debateClass}">
+                    <div class="debate-header">
+                        <span class="debate-speaker">${exchange.speaker || 'Speaker'}</span>
+                        <span class="debate-round">Round ${round.round}</span>
+                    </div>
+                    <p>${exchange.statement || 'No statement provided'}</p>
+                </div>
+            `;
+        }).join('');
+
+        return roundHeader + exchanges;
     }).join('');
 
     content.innerHTML = html;
