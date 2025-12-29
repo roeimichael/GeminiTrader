@@ -2,6 +2,7 @@ const API_BASE_URL = 'http://localhost:8000';
 
 let sessionId = null;
 let isInitialized = false;
+let availableAgents = {};
 
 const elements = {
     ticker: document.getElementById('ticker'),
@@ -13,7 +14,9 @@ const elements = {
     resultsCard: document.getElementById('resultsCard'),
     loadingCard: document.getElementById('loadingCard'),
     apiStatus: document.getElementById('apiStatus'),
-    apiStatusText: document.getElementById('apiStatusText')
+    apiStatusText: document.getElementById('apiStatusText'),
+    agentsLoading: document.getElementById('agentsLoading'),
+    agentsContainer: document.getElementById('agentsContainer')
 };
 
 function setTodayDate() {
@@ -38,9 +41,103 @@ async function checkAPIHealth() {
     }
 }
 
+async function fetchAvailableAgents() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/agents`);
+        if (response.ok) {
+            availableAgents = await response.json();
+            renderAgents();
+            return true;
+        }
+    } catch (error) {
+        console.error('Failed to fetch agents:', error);
+        elements.agentsLoading.textContent = 'Failed to load agents. Please refresh.';
+        return false;
+    }
+}
+
+function renderAgents() {
+    const categoryOrder = ['analysts', 'researchers', 'managers', 'risk_analysts', 'trader'];
+    const categoryLabels = {
+        'analysts': 'Analysts',
+        'researchers': 'Researchers',
+        'managers': 'Managers',
+        'risk_analysts': 'Risk Analysts',
+        'trader': 'Trader'
+    };
+
+    let html = '';
+
+    categoryOrder.forEach(category => {
+        if (!availableAgents[category]) return;
+
+        const agents = availableAgents[category];
+        const categoryName = categoryLabels[category] || category;
+
+        html += `
+            <div class="agent-category">
+                <h3>
+                    ${categoryName}
+                    <span class="category-actions">
+                        <button onclick="selectCategoryAgents('${category}', true)">Select All</button> |
+                        <button onclick="selectCategoryAgents('${category}', false)">Deselect All</button>
+                    </span>
+                </h3>
+                <div class="checkbox-group">
+        `;
+
+        Object.entries(agents).forEach(([agentId, agentInfo]) => {
+            const agentKey = `${agentId}_${category === 'trader' ? 'trader' : agentId}`;
+            const isDefaultChecked = category === 'analysts';
+
+            html += `
+                <label class="checkbox-label">
+                    <input
+                        type="checkbox"
+                        value="${agentKey}"
+                        data-category="${category}"
+                        data-agent-id="${agentId}"
+                        ${isDefaultChecked ? 'checked' : ''}
+                    >
+                    <span>${agentInfo.name}</span>
+                    <small>${agentInfo.description}</small>
+                    ${agentInfo.requires_memory ? '<small style="color: var(--primary-color); font-weight: 600;">Requires Memory</small>' : ''}
+                </label>
+            `;
+        });
+
+        html += `
+                </div>
+            </div>
+        `;
+    });
+
+    elements.agentsContainer.innerHTML = html;
+    elements.agentsLoading.style.display = 'none';
+    elements.agentsContainer.style.display = 'block';
+
+    const form = document.querySelector('.form-group label');
+    if (form && form.textContent.includes('Loading')) {
+        form.textContent = 'Select Agents';
+    }
+}
+
+function selectCategoryAgents(category, select) {
+    const checkboxes = document.querySelectorAll(`input[data-category="${category}"]`);
+    checkboxes.forEach(cb => cb.checked = select);
+}
+
 function getSelectedAnalysts() {
-    const checkboxes = document.querySelectorAll('.checkbox-group input[type="checkbox"]:checked');
-    return Array.from(checkboxes).map(cb => cb.value);
+    const checkboxes = document.querySelectorAll('#agentsContainer input[type="checkbox"]:checked');
+    return Array.from(checkboxes).map(cb => {
+        const category = cb.getAttribute('data-category');
+        const agentId = cb.getAttribute('data-agent-id');
+        return `${agentId}_${category === 'analysts' ? 'analyst' :
+                              category === 'researchers' ? 'researcher' :
+                              category === 'managers' ? 'manager' :
+                              category === 'risk_analysts' ? 'analyst' :
+                              'trader'}`;
+    });
 }
 
 function showLoading(show) {
@@ -313,10 +410,11 @@ elements.ticker.addEventListener('keypress', (e) => {
     }
 });
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
     setTodayDate();
     setupTabs();
-    checkAPIHealth();
+    await checkAPIHealth();
+    await fetchAvailableAgents();
 
     setInterval(checkAPIHealth, 30000);
 });

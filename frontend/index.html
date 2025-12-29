@@ -49,28 +49,12 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Select Analysts</label>
-                    <div class="checkbox-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" value="market_analyst" checked>
-                            <span>Market Analyst</span>
-                            <small>Technical indicators and market trends</small>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" value="fundamentals_analyst" checked>
-                            <span>Fundamentals Analyst</span>
-                            <small>Financial statements and company fundamentals</small>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" value="news_analyst" checked>
-                            <span>News Analyst</span>
-                            <small>Recent news and current events</small>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" value="social_analyst" checked>
-                            <span>Social Media Analyst</span>
-                            <small>Social sentiment and public perception</small>
-                        </label>
+                    <label>Select Agents (Loading...)</label>
+                    <div id="agentsLoading" class="loading-agents">
+                        Loading available agents...
+                    </div>
+                    <div id="agentsContainer" style="display: none;">
+                        <!-- Agents will be dynamically loaded here -->
                     </div>
                 </div>
 
