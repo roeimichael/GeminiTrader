@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import json
 from datetime import date
-from typing import Dict, Tuple, List, Optional
+from typing import Dict, Tuple
 
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
