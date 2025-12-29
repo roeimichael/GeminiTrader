@@ -12,7 +12,7 @@ class Propagator:
     def __init__(self, max_recur_limit=100):
         self.max_recur_limit = max_recur_limit
 
-    def create_initial_state(self, company_name: str, trade_date: str) -> dict:
+    def create_initial_state(self, company_name: str, trade_date: str) -> AgentState:
         """Create the initial state for the agent graph."""
         return {
             "messages": [("human", company_name)],

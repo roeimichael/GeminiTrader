@@ -9,7 +9,6 @@ from tradingagents.graph.trading_graph import TradingAgentsGraph
 from tradingagents.config import DEFAULT_CONFIG
 from tradingagents.dataflows.validation import validate_ticker_data, TickerValidationError
 from tradingagents.query_classifier import QueryClassifier
-from tradingagents.agents.utils.agent_states import AgentState
 from tradingagents.logger_config import get_logger
 
 logger = get_logger(__name__)
@@ -54,12 +53,17 @@ class ConversationManager:
         """Send user query to appropriate agents and orchestrate multi-agent analysis"""
         if not context or not context.get("ticker"):
             return {
+                "status": "error",
+                "timestamp": datetime.now().isoformat(),
+                "query": query,
+                "ticker": "",
                 "error": "Please provide a ticker symbol in the context.",
                 "individual_responses": [],
                 "debate": [],
                 "final_verdict": {
                     "summary": "Error: No ticker provided. Please specify a stock ticker to analyze."
-                }
+                },
+                "query_classification": {}
             }
 
         ticker = context.get("ticker", "").upper()
@@ -97,6 +101,10 @@ class ConversationManager:
             logger.error(f"[FAIL] VALIDATION FAILED: {error_msg}")
             logger.info("="*60)
             return {
+                "status": "error",
+                "timestamp": datetime.now().isoformat(),
+                "query": query,
+                "ticker": ticker,
                 "error": error_msg,
                 "individual_responses": [],
                 "debate": [],
@@ -107,7 +115,8 @@ class ConversationManager:
                               f"2. Company is publicly traded\n"
                               f"3. API keys are configured correctly\n"
                               f"4. You have internet connectivity"
-                }
+                },
+                "query_classification": classification
             }
 
         try:
@@ -123,8 +132,10 @@ class ConversationManager:
             formatted_result["query_classification"] = classification
 
             conversation = {
+                "status": "success",
                 "timestamp": datetime.now().isoformat(),
                 "query": query,
+                "ticker": ticker,
                 "context": context,
                 **formatted_result
             }
@@ -136,12 +147,17 @@ class ConversationManager:
             error_msg = f"Error executing analysis: {str(e)}"
             logger.error(f"Analysis execution failed: {error_msg}", exc_info=True)
             return {
+                "status": "error",
+                "timestamp": datetime.now().isoformat(),
+                "query": query,
+                "ticker": ticker,
                 "error": error_msg,
                 "individual_responses": [],
                 "debate": [],
                 "final_verdict": {
                     "summary": f"Analysis failed: {error_msg}"
-                }
+                },
+                "query_classification": classification if 'classification' in locals() else {}
             }
 
     def _format_graph_results(self, query: str, ticker: str, trade_date: str, final_state: dict) -> dict:

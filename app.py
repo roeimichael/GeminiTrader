@@ -165,13 +165,32 @@ async def initialize_pool(request: InitPoolRequest):
 
         pool = AgentPool()
 
+        agent_mapping = {
+            "market_analyst": ("analysts", "market"),
+            "fundamentals_analyst": ("analysts", "fundamentals"),
+            "news_analyst": ("analysts", "news"),
+            "social_analyst": ("analysts", "social"),
+            "bull_researcher": ("researchers", "bull"),
+            "bear_researcher": ("researchers", "bear"),
+            "research_manager": ("managers", "research"),
+            "risk_manager": ("managers", "risk"),
+            "risky_analyst": ("risk_analysts", "risky"),
+            "safe_analyst": ("risk_analysts", "safe"),
+            "neutral_analyst": ("risk_analysts", "neutral"),
+            "trader": ("trader", "trader"),
+        }
+
         initialized_agents = []
         for agent_key in request.selected_agents:
             try:
-                agent_info = AgentRegistry.get_agent(agent_key)
-                pool.add_agent(agent_key, agent_info)
+                if agent_key not in agent_mapping:
+                    logger.warning(f"Unknown agent key: {agent_key}")
+                    continue
+
+                category, agent_id = agent_mapping[agent_key]
+                pool.add_agent(category, agent_id)
                 initialized_agents.append(agent_key)
-                logger.debug(f"Added agent: {agent_key}")
+                logger.debug(f"Added agent: {agent_key} ({category}/{agent_id})")
             except Exception as e:
                 logger.warning(f"Failed to add agent {agent_key}: {e}")
 
@@ -181,7 +200,6 @@ async def initialize_pool(request: InitPoolRequest):
                 detail="No valid agents could be initialized"
             )
 
-        pool.initialize_all()
         conversation_manager = ConversationManager(pool)
 
         sessions[session_id] = {
