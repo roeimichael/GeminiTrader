@@ -143,13 +143,24 @@ async def health_check():
     }
 
 
-@app.get("/api/agents", response_model=Dict[str, AgentInfo], tags=["Agents"])
+@app.get("/api/agents", tags=["Agents"])
 async def get_available_agents():
     """Get all available agents with their descriptions and capabilities"""
     try:
-        agents = AgentRegistry.get_all_agents()
-        logger.info(f"Fetched {len(agents)} available agents")
-        return agents
+        agents_dict = AgentRegistry.get_all_agents()
+
+        serializable_agents = {}
+        for category, agents in agents_dict.items():
+            serializable_agents[category] = {}
+            for agent_id, agent_info in agents.items():
+                serializable_agents[category][agent_id] = {
+                    "name": agent_info["name"],
+                    "description": agent_info["description"],
+                    "requires_memory": agent_info["requires_memory"]
+                }
+
+        logger.info(f"Fetched {sum(len(agents) for agents in serializable_agents.values())} available agents")
+        return serializable_agents
     except Exception as e:
         logger.error(f"Error fetching agents: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
