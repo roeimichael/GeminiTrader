@@ -1,10 +1,8 @@
-# TradingAgents/graph/trading_graph.py
-
 import os
 from pathlib import Path
 import json
 from datetime import date
-from typing import Dict, Any, Tuple, List, Optional
+from typing import Dict, Tuple, List, Optional
 
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
@@ -22,7 +20,6 @@ from tradingagents.agents.utils.agent_states import (
 )
 from tradingagents.dataflows.config import set_config
 
-# Import the new abstract tool methods from agent_utils
 from tradingagents.agents.utils.agent_utils import (
     get_stock_data,
     get_indicators,
@@ -44,7 +41,6 @@ from .signal_processing import SignalProcessor
 from tradingagents.dataflows.validation import validate_ticker_data, TickerValidationError
 from tradingagents.logger_config import get_logger
 
-# Initialize logger for this module
 logger = get_logger(__name__)
 
 
@@ -55,15 +51,8 @@ class TradingAgentsGraph:
         self,
         selected_analysts=["market", "social", "news", "fundamentals"],
         debug=False,
-        config: Dict[str, Any] = None,
+        config: dict = None,
     ):
-        """Initialize the trading agents graph and components.
-
-        Args:
-            selected_analysts: List of analyst types to include
-            debug: Whether to run in debug mode
-            config: Configuration dictionary. If None, uses default config
-        """
         self.debug = debug
         self.config = config or DEFAULT_CONFIG
 
@@ -162,50 +151,28 @@ class TradingAgentsGraph:
             ),
         }
 
-    def propagate(self, company_name: str, trade_date: str) -> Tuple[Dict[str, Any], str]:
-        """
-        Execute multi-agent analysis workflow for a specific stock and date
-
-        Why this architecture: The multi-stage workflow ensures balanced analysis
-        by having analysts gather data, researchers debate investment thesis,
-        trader create execution plan, and risk analysts validate before final decision.
-
-        Args:
-            company_name: Stock ticker symbol (e.g., "AAPL", "MSFT")
-            trade_date: Date for analysis in YYYY-MM-DD format
-
-        Returns:
-            Tuple of (final_state, processed_signal):
-            - final_state: Complete AgentState with all analysis results
-            - processed_signal: Simplified trading signal (BUY/SELL/HOLD)
-        """
-
+    def propagate(self, company_name: str, trade_date: str) -> Tuple[dict, str]:
+        """Execute multi-agent analysis workflow for a specific stock and date"""
         self.ticker = company_name
         logger.info(f"Starting analysis for {company_name} on {trade_date}")
 
-        # FAIL-FAST VALIDATION: Ensure ticker has accessible data before proceeding
-        # Why: Safety net in case validation was skipped at higher level
         try:
             validate_ticker_data(company_name, trade_date)
             logger.debug(f"Ticker {company_name} validated")
         except TickerValidationError as e:
             error_msg = f"Cannot proceed with analysis: {str(e)}"
             logger.error(f"Validation failed: {error_msg}")
-            # Why return error state: Prevents crash, allows caller to handle gracefully
             error_state = self.propagator.create_initial_state(company_name, trade_date)
             error_state["final_trade_decision"] = f"ERROR: {error_msg}"
             error_state["market_report"] = f"Validation failed: {str(e)}"
             return error_state, "ABORT"
 
-        # Initialize state
         init_agent_state = self.propagator.create_initial_state(
             company_name, trade_date
         )
         args = self.propagator.get_graph_args()
 
         if self.debug:
-            # Debug mode: Stream execution with detailed logging
-            # Why: Allows real-time monitoring during development
             logger.debug("Running in DEBUG mode - streaming agent execution")
             trace = []
             for chunk in self.graph.stream(init_agent_state, **args):
@@ -216,19 +183,13 @@ class TradingAgentsGraph:
 
             final_state = trace[-1]
         else:
-            # Production mode: Direct invocation without streaming
-            # Why: Faster when detailed monitoring not needed
             logger.info("Executing graph workflow...")
             final_state = self.graph.invoke(init_agent_state, **args)
             logger.info("Graph execution complete")
 
-        # Store current state for reflection
         self.curr_state = final_state
-
-        # Log state
         self._log_state(trade_date, final_state)
 
-        # Return decision and processed signal
         return final_state, self.process_signal(final_state["final_trade_decision"])
 
     def _log_state(self, trade_date, final_state):

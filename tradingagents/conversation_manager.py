@@ -1,11 +1,8 @@
 """
 Conversation Manager for Agent Pool
-
-Handles multi-agent conversations by interfacing with TradingAgentsGraph.
-Acts as the orchestration layer between user queries and the LangGraph workflow.
 """
 import json
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Optional
 from datetime import datetime
 
 from tradingagents.graph.trading_graph import TradingAgentsGraph
@@ -15,7 +12,6 @@ from tradingagents.query_classifier import QueryClassifier
 from tradingagents.agents.utils.agent_states import AgentState
 from tradingagents.logger_config import get_logger
 
-# Initialize logger for this module
 logger = get_logger(__name__)
 
 
@@ -23,23 +19,11 @@ class ConversationManager:
     """Manages conversations and debates between agents in the pool"""
 
     def __init__(self, agent_pool):
-        """
-        Initialize ConversationManager with agent pool and TradingAgentsGraph
-
-        Args:
-            agent_pool: AgentPool instance containing active agents
-        """
         self.agent_pool = agent_pool
         self.conversation_history = []
-
-        # Initialize query classifier for intelligent agent routing
         self.query_classifier = QueryClassifier(config=DEFAULT_CONFIG)
-
-        # Extract selected analyst types from agent pool
         selected_analysts = self._extract_selected_analysts()
 
-        # Initialize TradingAgentsGraph with selected analysts
-        # Note: This will be dynamically updated based on query classification
         self.graph = TradingAgentsGraph(
             selected_analysts=selected_analysts,
             debug=False,
@@ -51,10 +35,8 @@ class ConversationManager:
         analysts = []
 
         if not self.agent_pool or not self.agent_pool.active_agents:
-            # Default to all analysts if none selected
             return ["market", "social", "news", "fundamentals"]
 
-        # Map agent keys to analyst types
         analyst_mapping = {
             "market_analyst": "market",
             "social_analyst": "social",
@@ -66,34 +48,10 @@ class ConversationManager:
             if key in analyst_mapping:
                 analysts.append(analyst_mapping[key])
 
-        # If no analysts found, use all
         return analysts if analysts else ["market", "social", "news", "fundamentals"]
 
-    def send_query_to_agents(self, query: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """
-        Send user query to appropriate agents and orchestrate multi-agent analysis
-
-        This is the main entry point for the conversation system. It performs:
-        1. Query classification (determine which agents are needed)
-        2. Ticker validation (fail-fast if ticker invalid)
-        3. Graph execution (run selected agents through TradingAgentsGraph)
-        4. Result formatting (extract and structure agent outputs)
-
-        Why this approach: Validates input early to avoid wasting API calls and
-        LLM costs on invalid tickers. Uses query classification to run only
-        necessary agents (cost optimization).
-
-        Args:
-            query: User's question/query (for context/display)
-            context: Required context with 'ticker' and 'date'
-
-        Returns:
-            Dictionary with:
-            - individual_responses: List of agent analyses
-            - debate: Multi-round debate between agents
-            - final_verdict: Consensus recommendation
-            - query_classification: Classification metadata
-        """
+    def send_query_to_agents(self, query: str, context: Optional[Dict[str, str]] = None) -> dict:
+        """Send user query to appropriate agents and orchestrate multi-agent analysis"""
         if not context or not context.get("ticker"):
             return {
                 "error": "Please provide a ticker symbol in the context.",
@@ -107,9 +65,6 @@ class ConversationManager:
         ticker = context.get("ticker", "").upper()
         trade_date = context.get("date", datetime.now().strftime("%Y-%m-%d"))
 
-        # PHASE -1: QUERY CLASSIFICATION (Smart Routing)
-        # Determine which agents are actually needed for this specific query
-        # Why: Prevents running all agents for simple questions, reduces cost by 50-75%
         logger.info("="*60)
         logger.info("PHASE -1: Query Classification")
         logger.info("="*60)
@@ -123,27 +78,23 @@ class ConversationManager:
         logger.debug(f"Classification details: {classification}")
         logger.info("="*60)
 
-        # Recreate graph with only the necessary agents
-        # This is the key optimization: only spin up what's needed
         self.graph = TradingAgentsGraph(
             selected_analysts=selected_agents,
             debug=False,
             config=DEFAULT_CONFIG
         )
 
-        # FAIL-FAST VALIDATION: Check ticker data BEFORE spinning up agents
-        # Why: Prevents wasting API calls and LLM costs on invalid/non-existent tickers
         try:
             logger.info("="*60)
             logger.info("PHASE 0: Pre-Flight Validation")
             logger.info("="*60)
             validation_result = validate_ticker_data(ticker, trade_date)
-            logger.info(f"✓ Ticker '{ticker}' validated successfully")
+            logger.info(f"[PASS] Ticker '{ticker}' validated successfully")
             logger.debug(f"Validation result: {validation_result}")
             logger.info("="*60)
         except TickerValidationError as e:
             error_msg = f"Ticker validation failed: {str(e)}"
-            logger.error(f"✗ VALIDATION FAILED: {error_msg}")
+            logger.error(f"[FAIL] VALIDATION FAILED: {error_msg}")
             logger.info("="*60)
             return {
                 "error": error_msg,
@@ -165,19 +116,12 @@ class ConversationManager:
             logger.info(f"Active Agents: {', '.join(selected_agents)} ({len(selected_agents)}/4)")
             logger.info("="*60)
 
-            # Run the full TradingAgentsGraph workflow
-            # Why: This is the core analysis engine - runs agents in parallel, orchestrates
-            # debates between bull/bear researchers and risk analysts, generates final verdict
             final_state, processed_signal = self.graph.propagate(ticker, trade_date)
             logger.debug(f"Graph execution complete. Signal: {processed_signal}")
 
-            # Extract and format results from the final state
             formatted_result = self._format_graph_results(query, ticker, trade_date, final_state)
-
-            # Add classification info to result
             formatted_result["query_classification"] = classification
 
-            # Save to history
             conversation = {
                 "timestamp": datetime.now().isoformat(),
                 "query": query,
@@ -200,28 +144,10 @@ class ConversationManager:
                 }
             }
 
-    def _format_graph_results(self, query: str, ticker: str, trade_date: str,
-                              final_state: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Format the TradingAgentsGraph final state into conversation format
-
-        Extracts individual agent reports, debate history, and final decisions
-        from the state dictionary returned by the graph.
-
-        Args:
-            query: Original user query
-            ticker: Stock ticker analyzed
-            trade_date: Date of analysis
-            final_state: Final state dictionary from TradingAgentsGraph
-
-        Returns:
-            Formatted dictionary with individual_responses, debate, and final_verdict
-        """
-
-        # Phase 1: Extract individual analyst responses
+    def _format_graph_results(self, query: str, ticker: str, trade_date: str, final_state: dict) -> dict:
+        """Format the TradingAgentsGraph final state into conversation format"""
         individual_responses = []
 
-        # Market Analyst
         if final_state.get("market_report"):
             individual_responses.append({
                 "agent": "Market Analyst",
@@ -230,7 +156,6 @@ class ConversationManager:
                 "response": final_state["market_report"]
             })
 
-        # Fundamentals Analyst
         if final_state.get("fundamentals_report"):
             individual_responses.append({
                 "agent": "Fundamentals Analyst",
@@ -239,7 +164,6 @@ class ConversationManager:
                 "response": final_state["fundamentals_report"]
             })
 
-        # News Analyst
         if final_state.get("news_report"):
             individual_responses.append({
                 "agent": "News Analyst",
@@ -248,7 +172,6 @@ class ConversationManager:
                 "response": final_state["news_report"]
             })
 
-        # Social Media Analyst
         if final_state.get("sentiment_report"):
             individual_responses.append({
                 "agent": "Social Media Analyst",
@@ -257,10 +180,8 @@ class ConversationManager:
                 "response": final_state["sentiment_report"]
             })
 
-        # Phase 2: Extract debate rounds
         debate_rounds = []
 
-        # Investment Debate (Bull vs Bear)
         investment_debate = final_state.get("investment_debate_state", {})
         if investment_debate:
             debate_rounds.append({
@@ -282,7 +203,6 @@ class ConversationManager:
                 ]
             })
 
-        # Trader Analysis
         if final_state.get("trader_investment_plan"):
             debate_rounds.append({
                 "round": 2,
@@ -295,7 +215,6 @@ class ConversationManager:
                 ]
             })
 
-        # Risk Debate (Risky vs Safe vs Neutral)
         risk_debate = final_state.get("risk_debate_state", {})
         if risk_debate:
             debate_rounds.append({
@@ -321,7 +240,6 @@ class ConversationManager:
                 ]
             })
 
-        # Phase 3: Generate final verdict
         final_verdict = self._generate_final_verdict_from_state(
             query, ticker, trade_date, final_state, individual_responses
         )
@@ -333,15 +251,12 @@ class ConversationManager:
         }
 
     def _generate_final_verdict_from_state(self, query: str, ticker: str,
-                                           trade_date: str, final_state: Dict[str, Any],
-                                           individual_responses: List[Dict]) -> Dict[str, Any]:
+                                           trade_date: str, final_state: dict,
+                                           individual_responses: List[dict]) -> dict:
         """Generate final verdict from the TradingAgentsGraph final state"""
-
-        # Extract the final trade decision
         final_decision = final_state.get("final_trade_decision", "No decision available")
         investment_plan = final_state.get("investment_plan", "")
 
-        # Analyze sentiment from individual responses
         bullish_count = 0
         bearish_count = 0
         neutral_count = 0
@@ -358,7 +273,6 @@ class ConversationManager:
         total = len(individual_responses)
         bullish_pct = (bullish_count / total * 100) if total > 0 else 0
 
-        # Determine overall recommendation
         if bullish_pct >= 70:
             overall = "STRONG BUY"
             confidence = "High"
@@ -395,10 +309,9 @@ class ConversationManager:
         return verdict
 
     def _generate_summary_text(self, query: str, ticker: str, recommendation: str,
-                               bullish_pct: float, responses: List[Dict],
+                               bullish_pct: float, responses: List[dict],
                                final_decision: str) -> str:
         """Generate human-readable summary"""
-
         summary = f"""
 ANALYSIS FOR {ticker}
 Query: {query}
@@ -426,21 +339,19 @@ Remember: This is an AI-generated analysis for informational purposes only.
 Always conduct your own research and consult with financial advisors before making
 investment decisions.
 """
-
         return summary.strip()
 
-    def _summarize_agent_perspectives(self, responses: List[Dict]) -> str:
+    def _summarize_agent_perspectives(self, responses: List[dict]) -> str:
         """Create a brief summary of each agent's perspective"""
         summaries = []
         for resp in responses:
-            # Take first 150 characters of response as summary
             brief = resp["response"][:150].replace("\n", " ")
             if len(resp["response"]) > 150:
                 brief += "..."
             summaries.append(f"• {resp['agent']}: {brief}")
         return "\n".join(summaries)
 
-    def get_conversation_history(self) -> List[Dict[str, Any]]:
+    def get_conversation_history(self) -> List[dict]:
         """Return all conversation history"""
         return self.conversation_history
 

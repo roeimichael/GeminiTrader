@@ -1,50 +1,23 @@
 """
-Query Classifier / Router Node for Intelligent Agent Selection
-
-This module implements a "smart router" that determines which agents are needed
-based on the user's query. This prevents running all 12 agents for simple questions.
-
-Architecture Philosophy:
-- Simple question ("What's the P/E ratio?") → Only Fundamentals Analyst
-- Medium question ("Technical outlook?") → Only Market Analyst
-- Complex question ("Full analysis") → All agents
-- News-focused → News + Social analysts
-
-This dramatically reduces:
-- LLM API costs (fewer agents = fewer LLM calls)
-- Latency (faster responses for simple queries)
-- Data API costs (only fetch what's needed)
+Query Classifier for Intelligent Agent Selection
 """
 
-from typing import List, Dict, Any
+from typing import List, Dict
 from langchain_google_genai import ChatGoogleGenerativeAI
 from tradingagents.config import DEFAULT_CONFIG
 
 
 class QueryClassifier:
-    """
-    Lightweight classifier that routes queries to appropriate agents
+    """Lightweight classifier that routes queries to appropriate agents"""
 
-    Uses gemini-2.0-flash-exp (fast, cheap) to analyze query and determine
-    which specialized agents are needed.
-    """
-
-    def __init__(self, config: Dict[str, Any] = None):
-        """
-        Initialize query classifier with lightweight LLM
-
-        Args:
-            config: Configuration dictionary (uses DEFAULT_CONFIG if not provided)
-        """
+    def __init__(self, config: Dict = None):
         self.config = config or DEFAULT_CONFIG
 
-        # Use the quick/flash model for classification (speed is key)
         self.llm = ChatGoogleGenerativeAI(
             model=self.config.get("quick_think_llm", "gemini-2.0-flash-exp"),
-            temperature=0.0  # Deterministic routing
+            temperature=0.0
         )
 
-        # Define available agent categories and their capabilities
         self.agent_capabilities = {
             "market": {
                 "description": "Technical analysis, price charts, indicators (RSI, MACD, etc.)",
@@ -69,26 +42,10 @@ class QueryClassifier:
             }
         }
 
-    def classify_query(self, query: str, ticker: str = None) -> Dict[str, Any]:
-        """
-        Classify user query and determine which agents are needed
-
-        Args:
-            query: User's question/query
-            ticker: Optional ticker symbol for context
-
-        Returns:
-            Dictionary with:
-            - selected_agents: List of agent categories needed
-            - reasoning: Why these agents were selected
-            - complexity: "simple", "medium", or "complex"
-            - estimated_cost: Rough cost estimate
-        """
-
-        # Quick keyword-based pre-filtering (fast path)
+    def classify_query(self, query: str, ticker: str = None) -> dict:
+        """Classify user query and determine which agents are needed"""
         keyword_matches = self._keyword_matching(query)
 
-        # If query is very simple and matches clear keywords, use fast path
         if len(keyword_matches) == 1 and self._is_simple_query(query):
             return {
                 "selected_agents": keyword_matches,
@@ -98,19 +55,10 @@ class QueryClassifier:
                 "method": "keyword_matching"
             }
 
-        # For complex or ambiguous queries, use LLM classification
         return self._llm_classification(query, ticker, keyword_matches)
 
     def _keyword_matching(self, query: str) -> List[str]:
-        """
-        Fast keyword-based matching as first pass
-
-        Args:
-            query: User query
-
-        Returns:
-            List of agent categories that match keywords
-        """
+        """Fast keyword-based matching as first pass"""
         query_lower = query.lower()
         matches = []
 
@@ -121,48 +69,24 @@ class QueryClassifier:
         return matches
 
     def _is_simple_query(self, query: str) -> bool:
-        """
-        Determine if query is simple (single question, no complexity)
-
-        Args:
-            query: User query
-
-        Returns:
-            True if query appears simple
-        """
-        # Simple heuristics
+        """Determine if query is simple (single question, no complexity)"""
         query_lower = query.lower()
 
-        # Single question mark = likely simple
         if query.count("?") == 1:
-            # Short query = simple
             if len(query.split()) < 15:
                 return True
 
-        # Keywords indicating complexity
         complex_indicators = ["full analysis", "complete", "comprehensive", "all", "everything",
                             "detailed", "in-depth", "thorough"]
 
         if any(indicator in query_lower for indicator in complex_indicators):
             return False
 
-        return False  # Default to LLM classification for safety
+        return False
 
     def _llm_classification(self, query: str, ticker: str,
-                           keyword_matches: List[str]) -> Dict[str, Any]:
-        """
-        Use LLM to classify query when keyword matching is insufficient
-
-        Args:
-            query: User query
-            ticker: Ticker symbol
-            keyword_matches: Results from keyword matching
-
-        Returns:
-            Classification result dictionary
-        """
-
-        # Build prompt for LLM
+                           keyword_matches: List[str]) -> dict:
+        """Use LLM to classify query when keyword matching is insufficient"""
         prompt = f"""You are a query router for a multi-agent stock analysis system.
 
 User Query: "{query}"
@@ -205,15 +129,11 @@ COMPLEXITY: complex
 Now classify the user's query:"""
 
         try:
-            # Call LLM
             response = self.llm.invoke(prompt)
             response_text = response.content if hasattr(response, 'content') else str(response)
-
-            # Parse response
             return self._parse_llm_response(response_text)
 
         except Exception as e:
-            # Fallback to keyword matches or all agents
             print(f"WARNING: LLM classification failed: {e}")
             print(f"Falling back to keyword matches: {keyword_matches}")
 
@@ -226,7 +146,6 @@ Now classify the user's query:"""
                     "method": "fallback_keyword"
                 }
             else:
-                # Ultimate fallback: use all agents
                 return {
                     "selected_agents": ["market", "fundamentals", "news", "social"],
                     "reasoning": "Classification uncertain, using all agents for safety",
@@ -242,16 +161,8 @@ Now classify the user's query:"""
             lines.append(f"- {agent}: {info['description']}")
         return "\n".join(lines)
 
-    def _parse_llm_response(self, response: str) -> Dict[str, Any]:
-        """
-        Parse LLM classification response
-
-        Args:
-            response: Raw LLM response text
-
-        Returns:
-            Parsed classification dictionary
-        """
+    def _parse_llm_response(self, response: str) -> dict:
+        """Parse LLM classification response"""
         lines = response.strip().split("\n")
 
         agents = []
@@ -262,9 +173,7 @@ Now classify the user's query:"""
             line = line.strip()
             if line.startswith("AGENTS:"):
                 agents_str = line.replace("AGENTS:", "").strip()
-                # Parse comma-separated list
                 agents = [a.strip() for a in agents_str.split(",")]
-                # Validate agents
                 valid_agents = ["market", "fundamentals", "news", "social"]
                 agents = [a for a in agents if a in valid_agents]
             elif line.startswith("REASONING:"):
@@ -272,12 +181,10 @@ Now classify the user's query:"""
             elif line.startswith("COMPLEXITY:"):
                 complexity = line.replace("COMPLEXITY:", "").strip().lower()
 
-        # Ensure at least one agent is selected
         if not agents:
             print("WARNING: No valid agents parsed from LLM response, using all agents")
             agents = ["market", "fundamentals", "news", "social"]
 
-        # Estimate cost based on number of agents
         cost_map = {1: "low", 2: "medium", 3: "high", 4: "high"}
         estimated_cost = cost_map.get(len(agents), "medium")
 
@@ -289,14 +196,8 @@ Now classify the user's query:"""
             "method": "llm_classification"
         }
 
-    def print_classification(self, classification: Dict[str, Any], query: str):
-        """
-        Pretty-print classification results
-
-        Args:
-            classification: Classification result dictionary
-            query: Original query
-        """
+    def print_classification(self, classification: dict, query: str):
+        """Pretty-print classification results"""
         print("\n" + "="*60)
         print("QUERY CLASSIFICATION")
         print("="*60)

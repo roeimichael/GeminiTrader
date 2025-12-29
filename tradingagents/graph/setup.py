@@ -1,6 +1,4 @@
-# TradingAgents/graph/setup.py
-
-from typing import Dict, Any
+from typing import Dict
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph, START
 from langgraph.prebuilt import ToolNode
@@ -26,7 +24,6 @@ class GraphSetup:
         risk_manager_memory,
         conditional_logic: ConditionalLogic,
     ):
-        """Initialize with required components."""
         self.quick_thinking_llm = quick_thinking_llm
         self.deep_thinking_llm = deep_thinking_llm
         self.tool_nodes = tool_nodes
@@ -37,18 +34,7 @@ class GraphSetup:
         self.risk_manager_memory = risk_manager_memory
         self.conditional_logic = conditional_logic
 
-    def setup_graph(
-        self, selected_analysts=["market", "social", "news", "fundamentals"]
-    ):
-        """Set up and compile the agent workflow graph.
-
-        Args:
-            selected_analysts (list): List of analyst types to include. Options are:
-                - "market": Market analyst
-                - "social": Social media analyst
-                - "news": News analyst
-                - "fundamentals": Fundamentals analyst
-        """
+    def setup_graph(self, selected_analysts=["market", "social", "news", "fundamentals"]):
         if len(selected_analysts) == 0:
             raise ValueError("Trading Agents Graph Setup Error: no analysts selected!")
 
@@ -116,11 +102,7 @@ class GraphSetup:
             )
             workflow.add_node(f"tools_{analyst_type}", tool_nodes[analyst_type])
 
-        # Add a no-op aggregator node that waits for all analysts to complete
-        # This enables parallel execution: all analysts run simultaneously,
-        # then execution proceeds once all are done
         def analyst_aggregator(state):
-            """No-op node that simply passes state through after all analysts complete"""
             return state
 
         workflow.add_node("Analyst Aggregator", analyst_aggregator)
