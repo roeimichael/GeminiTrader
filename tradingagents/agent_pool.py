@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List, Any
+from typing import Dict, List
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 from tradingagents.agents.analysts.market_analyst import create_market_analyst
@@ -105,17 +105,17 @@ class AgentRegistry:
     }
 
     @classmethod
-    def get_all_agents(cls) -> Dict[str, Dict[str, Any]]:
+    def get_all_agents(cls) -> dict:
         """Get all available agents organized by category"""
         return cls.AGENT_TYPES
 
     @classmethod
-    def get_agent_info(cls, category: str, agent_id: str) -> Dict[str, Any]:
+    def get_agent_info(cls, category: str, agent_id: str) -> dict:
         """Get information about a specific agent"""
         return cls.AGENT_TYPES.get(category, {}).get(agent_id, {})
 
     @classmethod
-    def list_all_agents(cls) -> List[Dict[str, Any]]:
+    def list_all_agents(cls) -> List[dict]:
         """Get flat list of all agents with their category"""
         agents = []
         for category, agents_dict in cls.AGENT_TYPES.items():
@@ -131,7 +131,7 @@ class AgentRegistry:
 class AgentPool:
     """Pool of initialized agents ready for use"""
 
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: dict = None):
         self.config = config or {}
         self.llm_quick = None
         self.llm_deep = None
@@ -200,7 +200,7 @@ class AgentPool:
             del self.active_agents[key]
         return self
 
-    def get_active_agents(self) -> List[Dict[str, Any]]:
+    def get_active_agents(self) -> List[dict]:
         """Get list of all active agents"""
         return [
             {

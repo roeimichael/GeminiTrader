@@ -103,18 +103,15 @@ def test_cost_savings():
     print("  - 30 medium queries (2 agents)")
     print("  - 20 complex queries (full analysis)")
 
-    # Cost calculation
-    cost_per_agent = 0.01  # $0.01 per agent run (rough estimate)
+    cost_per_agent = 0.01
 
-    # Without routing (always run all 4 agents)
     total_queries = 100
     agents_per_query_without_routing = 4
     total_cost_without = total_queries * agents_per_query_without_routing * cost_per_agent
 
-    # With routing
-    simple_cost = 50 * 1 * cost_per_agent  # 1 agent
-    medium_cost = 30 * 2 * cost_per_agent  # 2 agents
-    complex_cost = 20 * 4 * cost_per_agent  # 4 agents
+    simple_cost = 50 * 1 * cost_per_agent
+    medium_cost = 30 * 2 * cost_per_agent
+    complex_cost = 20 * 4 * cost_per_agent
     total_cost_with = simple_cost + medium_cost + complex_cost
 
     savings = total_cost_without - total_cost_with
@@ -127,15 +124,14 @@ def test_cost_savings():
     print(f"    - 50 simple × 1 agent × $0.01 = ${simple_cost:.2f}")
     print(f"    - 30 medium × 2 agents × $0.01 = ${medium_cost:.2f}")
     print(f"    - 20 complex × 4 agents × $0.01 = ${complex_cost:.2f}")
-    print(f"\n  💰 SAVINGS: ${savings:.2f} ({savings_pct:.0f}%)")
+    print(f"\n  SAVINGS: ${savings:.2f} ({savings_pct:.0f}%)")
 
-    # Latency savings
     print(f"\nLATENCY ANALYSIS:")
     print(f"  Without parallel execution:")
     print(f"    - 4 agents × 3s each = 12s per query")
     print(f"\n  With parallel execution:")
     print(f"    - 4 agents running simultaneously = ~3s per query")
-    print(f"\n  ⚡ SPEEDUP: 4x faster for complex queries")
+    print(f"\n  SPEEDUP: 4x faster for complex queries")
 
 
 def test_parallel_execution():
@@ -164,35 +160,35 @@ def main():
     try:
         test_simple_query()
     except Exception as e:
-        print(f"\n✗ Simple query test failed: {e}")
+        print(f"\n[FAIL] Simple query test failed: {e}")
 
     try:
         test_medium_query()
     except Exception as e:
-        print(f"\n✗ Medium query test failed: {e}")
+        print(f"\n[FAIL] Medium query test failed: {e}")
 
     try:
         test_complex_query()
     except Exception as e:
-        print(f"\n✗ Complex query test failed: {e}")
+        print(f"\n[FAIL] Complex query test failed: {e}")
 
     try:
         test_cost_savings()
     except Exception as e:
-        print(f"\n✗ Cost savings test failed: {e}")
+        print(f"\n[FAIL] Cost savings test failed: {e}")
 
     try:
         test_parallel_execution()
     except Exception as e:
-        print(f"\n✗ Parallel execution test failed: {e}")
+        print(f"\n[FAIL] Parallel execution test failed: {e}")
 
     print("\n" + "="*70)
     print("SUMMARY")
     print("="*70)
-    print("✓ Phase 3 implementation complete")
-    print("✓ Query classification routes to appropriate agents")
-    print("✓ Parallel execution enabled for analysts")
-    print("✓ Up to 65% cost savings + 4x speedup")
+    print("[PASS] Phase 3 implementation complete")
+    print("[PASS] Query classification routes to appropriate agents")
+    print("[PASS] Parallel execution enabled for analysts")
+    print("[PASS] Up to 65% cost savings + 4x speedup")
     print("="*70 + "\n")
 
 

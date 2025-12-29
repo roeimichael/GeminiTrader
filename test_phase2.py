@@ -22,33 +22,30 @@ def test_caching():
 
     ticker = "AAPL"
 
-    # First call - will hit API
     print(f"\n1st call for {ticker} (should hit API):")
     start = time.time()
     try:
         data1 = route_to_vendor("get_stock_data", ticker, period="1mo")
         elapsed1 = time.time() - start
-        print(f"✓ First call completed in {elapsed1:.2f}s")
+        print(f"[PASS] First call completed in {elapsed1:.2f}s")
     except Exception as e:
-        print(f"✗ First call failed: {e}")
+        print(f"[FAIL] First call failed: {e}")
         return
 
-    # Second call - should load from cache (instant!)
     print(f"\n2nd call for {ticker} (should load from cache):")
     start = time.time()
     try:
         data2 = route_to_vendor("get_stock_data", ticker, period="1mo")
         elapsed2 = time.time() - start
-        print(f"✓ Second call completed in {elapsed2:.2f}s")
+        print(f"[PASS] Second call completed in {elapsed2:.2f}s")
 
-        # Compare speeds
         speedup = elapsed1 / elapsed2 if elapsed2 > 0 else float('inf')
-        print(f"\n📊 CACHE SPEEDUP: {speedup:.1f}x faster!")
+        print(f"\nCACHE SPEEDUP: {speedup:.1f}x faster!")
         print(f"   First call:  {elapsed1:.2f}s (API)")
         print(f"   Second call: {elapsed2:.2f}s (cached)")
 
     except Exception as e:
-        print(f"✗ Second call failed: {e}")
+        print(f"[FAIL] Second call failed: {e}")
 
 
 def test_validation_valid_ticker():
@@ -62,10 +59,10 @@ def test_validation_valid_ticker():
 
     try:
         result = validate_ticker_data(ticker)
-        print(f"✓ Validation PASSED for '{ticker}'")
+        print(f"[PASS] Validation PASSED for '{ticker}'")
         print(f"  Message: {result['message']}")
     except TickerValidationError as e:
-        print(f"✗ Validation FAILED unexpectedly: {e}")
+        print(f"[FAIL] Validation FAILED unexpectedly: {e}")
 
 
 def test_validation_invalid_ticker():
@@ -74,16 +71,15 @@ def test_validation_invalid_ticker():
     print("TEST 3: VALIDATION - INVALID TICKER")
     print("="*70)
 
-    # Test various invalid tickers
     invalid_tickers = ["INVALID_TICKER_12345", "XXX", ""]
 
     for ticker in invalid_tickers:
         print(f"\nValidating ticker: '{ticker}'")
         try:
             result = validate_ticker_data(ticker)
-            print(f"✗ Validation PASSED unexpectedly (should have failed)")
+            print(f"[FAIL] Validation PASSED unexpectedly (should have failed)")
         except TickerValidationError as e:
-            print(f"✓ Validation correctly REJECTED invalid ticker")
+            print(f"[PASS] Validation correctly REJECTED invalid ticker")
             print(f"  Reason: {e}")
 
 
@@ -118,30 +114,30 @@ def main():
     try:
         test_caching()
     except Exception as e:
-        print(f"\n✗ Caching test failed: {e}")
+        print(f"\n[FAIL] Caching test failed: {e}")
 
     try:
         test_validation_valid_ticker()
     except Exception as e:
-        print(f"\n✗ Valid ticker test failed: {e}")
+        print(f"\n[FAIL] Valid ticker test failed: {e}")
 
     try:
         test_validation_invalid_ticker()
     except Exception as e:
-        print(f"\n✗ Invalid ticker test failed: {e}")
+        print(f"\n[FAIL] Invalid ticker test failed: {e}")
 
     try:
         test_cache_management()
     except Exception as e:
-        print(f"\n✗ Cache management test failed: {e}")
+        print(f"\n[FAIL] Cache management test failed: {e}")
 
     print("\n" + "="*70)
     print("SUMMARY")
     print("="*70)
-    print("✓ Phase 2 implementation complete")
-    print("✓ Disk caching reduces redundant API calls")
-    print("✓ Fail-fast validation prevents wasted agent runs")
-    print("✓ Cost savings through intelligent data management")
+    print("[PASS] Phase 2 implementation complete")
+    print("[PASS] Disk caching reduces redundant API calls")
+    print("[PASS] Fail-fast validation prevents wasted agent runs")
+    print("[PASS] Cost savings through intelligent data management")
     print("="*70 + "\n")
 
 

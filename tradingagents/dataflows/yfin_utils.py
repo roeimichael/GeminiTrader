@@ -1,7 +1,5 @@
-# gets data/stats
-
 import yfinance as yf
-from typing import Annotated, Callable, Any, Optional
+from typing import Annotated, Callable, Optional
 from pandas import DataFrame
 import pandas as pd
 from functools import wraps
@@ -13,7 +11,7 @@ def init_ticker(func: Callable) -> Callable:
     """Decorator to initialize yf.Ticker and pass it to the function."""
 
     @wraps(func)
-    def wrapper(symbol: Annotated[str, "ticker symbol"], *args, **kwargs) -> Any:
+    def wrapper(symbol: Annotated[str, "ticker symbol"], *args, **kwargs):
         ticker = yf.Ticker(symbol)
         return func(ticker, *args, **kwargs)
 
