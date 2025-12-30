@@ -1,0 +1,212 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    
+    /* TradingView Light Theme */
+    --background: 220 14% 96%;
+    --foreground: 220 9% 14%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 9% 14%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 9% 14%;
+
+    --primary: 199 89% 48%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 220 9% 14%;
+
+    --muted: 210 20% 94%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 199 89% 96%;
+    --accent-foreground: 199 89% 38%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 199 89% 48%;
+
+    --radius: 0.5rem;
+
+    /* Semantic Finance Colors */
+    --bullish: 145 63% 42%;
+    --bullish-foreground: 0 0% 100%;
+    --bullish-muted: 145 63% 95%;
+    
+    --bearish: 0 72% 51%;
+    --bearish-foreground: 0 0% 100%;
+    --bearish-muted: 0 72% 96%;
+    
+    --neutral: 38 92% 50%;
+    --neutral-foreground: 0 0% 100%;
+    --neutral-muted: 38 92% 95%;
+
+    /* Gradients */
+    --gradient-light: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 20% 98%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(210 20% 98%) 100%);
+    --gradient-bullish: linear-gradient(135deg, hsl(145 63% 42% / 0.08) 0%, hsl(145 63% 42% / 0.02) 100%);
+    --gradient-bearish: linear-gradient(135deg, hsl(0 72% 51% / 0.08) 0%, hsl(0 72% 51% / 0.02) 100%);
+    --gradient-glow: radial-gradient(ellipse at top, hsl(199 89% 48% / 0.08) 0%, transparent 50%);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(220 9% 14% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(220 9% 14% / 0.08), 0 2px 4px -2px hsl(220 9% 14% / 0.05);
+    --shadow-lg: 0 10px 15px -3px hsl(220 9% 14% / 0.08), 0 4px 6px -4px hsl(220 9% 14% / 0.05);
+    --shadow-glow: 0 0 40px -10px hsl(199 89% 48% / 0.2);
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 9% 14%;
+    --sidebar-primary: 199 89% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 199 89% 94%;
+    --sidebar-accent-foreground: 199 89% 38%;
+    --sidebar-border: 220 13% 88%;
+    --sidebar-ring: 199 89% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  code, pre, .font-mono {
+    font-family: var(--font-mono);
+  }
+}
+
+@layer utilities {
+  .gradient-light {
+    background: var(--gradient-light);
+  }
+
+  .gradient-card {
+    background: var(--gradient-card);
+  }
+
+  .gradient-bullish {
+    background: var(--gradient-bullish);
+  }
+
+  .gradient-bearish {
+    background: var(--gradient-bearish);
+  }
+
+  .gradient-glow {
+    background: var(--gradient-glow);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .text-bullish {
+    color: hsl(var(--bullish));
+  }
+
+  .text-bearish {
+    color: hsl(var(--bearish));
+  }
+
+  .text-neutral-signal {
+    color: hsl(var(--neutral));
+  }
+
+  .bg-bullish {
+    background-color: hsl(var(--bullish));
+  }
+
+  .bg-bearish {
+    background-color: hsl(var(--bearish));
+  }
+
+  .bg-bullish-muted {
+    background-color: hsl(var(--bullish-muted));
+  }
+
+  .bg-bearish-muted {
+    background-color: hsl(var(--bearish-muted));
+  }
+
+  .bg-neutral-muted {
+    background-color: hsl(var(--neutral-muted));
+  }
+
+  .border-bullish {
+    border-color: hsl(var(--bullish));
+  }
+
+  .border-bearish {
+    border-color: hsl(var(--bearish));
+  }
+
+  /* Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  /* Animation Classes */
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
