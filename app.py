@@ -12,6 +12,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict
 from datetime import datetime
+from contextlib import asynccontextmanager
 import uuid
 import os
 
@@ -21,12 +22,37 @@ from tradingagents.logger_config import get_logger, enable_debug_mode, enable_pr
 
 logger = get_logger(__name__)
 
+sessions: Dict[str, dict] = {}
+default_session_id = "default"
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Lifespan context manager that handles startup and shutdown events.
+    Replaces the deprecated @app.on_event("startup") and @app.on_event("shutdown").
+    """
+    # --- Startup Logic ---
+    logger.info("="*60)
+    logger.info("GeminiTrader API Starting Up")
+    logger.info("="*60)
+    logger.info("FastAPI server initialized")
+    logger.info("API Documentation: http://localhost:8000/docs")
+    logger.info("Health Check: http://localhost:8000/api/health")
+    logger.info("="*60)
+
+    yield  # Application runs here
+
+    # --- Shutdown Logic ---
+    logger.info("GeminiTrader API shutting down")
+    sessions.clear()
+
 app = FastAPI(
     title="GeminiTrader API",
     description="Multi-Agent Stock Analysis System with LangGraph",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 app.add_middleware(
@@ -42,14 +68,13 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 frontend_path = os.path.join(base_dir, "frontend")
 logger.info(f"Frontend path: {frontend_path}")
 logger.info(f"Frontend path exists: {os.path.exists(frontend_path)}")
+
 if os.path.exists(frontend_path):
     app.mount("/static", StaticFiles(directory=frontend_path), name="static")
     logger.info(f"Mounted static files from: {frontend_path}")
 else:
     logger.warning(f"Frontend directory not found at: {frontend_path}")
 
-sessions: Dict[str, dict] = {}
-default_session_id = "default"
 
 class AgentInfo(BaseModel):
     """Information about an available agent"""
@@ -64,7 +89,9 @@ class InitPoolRequest(BaseModel):
     selected_agents: List[str] = Field(
         ...,
         description="List of agent keys to initialize",
-        example=["market_analyst", "fundamentals_analyst", "news_analyst"]
+        json_schema_extra={
+            "example": ["market_analyst", "fundamentals_analyst", "news_analyst"]
+        }
     )
     session_id: Optional[str] = Field(
         default=None,
@@ -86,17 +113,23 @@ class QueryRequest(BaseModel):
     query: str = Field(
         ...,
         description="User's question about the stock",
-        example="What are your thoughts about investing in this stock?"
+        json_schema_extra={
+            "example": "What are your thoughts about investing in this stock?"
+        }
     )
     ticker: str = Field(
         ...,
         description="Stock ticker symbol",
-        example="AAPL"
+        json_schema_extra={
+            "example": "AAPL"
+        }
     )
     date: Optional[str] = Field(
         default=None,
         description="Analysis date in YYYY-MM-DD format",
-        example="2024-01-15"
+        json_schema_extra={
+            "example": "2024-01-15"
+        }
     )
     session_id: Optional[str] = Field(
         default=None,
@@ -130,31 +163,37 @@ class ErrorResponse(BaseModel):
     message: str
     details: Optional[dict] = None
 
+
 @app.get("/", tags=["General"])
 async def root():
     """Serve the frontend HTML"""
-    # Get absolute path to handle Windows correctly
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    frontend_file = os.path.join(base_dir, "frontend", "index.html")
 
-    # Debug logging
-    logger.info(f"Looking for frontend at: {frontend_file}")
-    logger.info(f"File exists: {os.path.exists(frontend_file)}")
+    # Option 1: Standard structure (frontend/index.html)
+    frontend_path = os.path.join(base_dir, "frontend", "index.html")
 
-    if os.path.exists(frontend_file):
-        return FileResponse(frontend_file)
+    # Option 2: Flat structure (index.html next to app.py)
+    root_path = os.path.join(base_dir, "index.html")
+
+    # Debug logs to see exactly what is happening in the terminal
+    logger.info(f"Checking for UI at: {frontend_path}")
+
+    if os.path.exists(frontend_path):
+        logger.info("Found UI in frontend folder")
+        return FileResponse(frontend_path)
+    elif os.path.exists(root_path):
+        logger.info("Found UI in root folder")
+        return FileResponse(root_path)
     else:
+        logger.error(f"UI NOT FOUND. Checked: {frontend_path} AND {root_path}")
         return {
-            "name": "GeminiTrader API",
-            "version": "1.0.0",
-            "description": "Multi-Agent Stock Analysis System",
-            "documentation": "/docs",
-            "health": "/api/health",
-            "endpoints": {
-                "agents": "/api/agents",
-                "initialize": "/api/initialize-pool",
-                "query": "/api/query",
-                "history": "/api/history"
+            "error": "UI file not found",
+            "instruction": "Please ensure index.html exists in the 'frontend' folder",
+            "current_directory": base_dir,
+            "api_info": {
+                "name": "GeminiTrader API",
+                "version": "1.0.0",
+                "docs": "/docs"
             }
         }
 
@@ -381,20 +420,3 @@ async def disable_debug():
     enable_production_mode()
     logger.info("Production mode enabled")
     return {"status": "success", "message": "Debug logging disabled"}
-
-
-@app.on_event("startup")
-async def startup_event():
-    logger.info("="*60)
-    logger.info("GeminiTrader API Starting Up")
-    logger.info("="*60)
-    logger.info("FastAPI server initialized")
-    logger.info("API Documentation: http://localhost:8000/docs")
-    logger.info("Health Check: http://localhost:8000/api/health")
-    logger.info("="*60)
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("GeminiTrader API shutting down")
-    sessions.clear()

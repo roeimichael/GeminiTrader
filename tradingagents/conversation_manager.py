@@ -37,10 +37,10 @@ class ConversationManager:
             return ["market", "social", "news", "fundamentals"]
 
         analyst_mapping = {
-            "market_analyst": "market",
-            "social_analyst": "social",
-            "news_analyst": "news",
-            "fundamentals_analyst": "fundamentals"
+            "analysts:market": "market",
+            "analysts:social": "social",
+            "analysts:news": "news",
+            "analysts:fundamentals": "fundamentals"
         }
 
         for key in self.agent_pool.active_agents.keys():
