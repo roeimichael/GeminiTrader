@@ -10,27 +10,59 @@ You were seeing JSON output instead of the frontend because:
 
 I've configured FastAPI to serve the frontend directly! Now everything works from one URL.
 
-## How to Start
+## Setup Your API Keys (IMPORTANT)
 
-### Method 1: Using the startup script (Recommended)
+### 1. Create your .env file
 
 ```bash
 cd /home/user/GeminiTrader
 
-# Set your API key
-export GOOGLE_API_KEY="your-google-api-key-here"
+# Copy the example file
+cp .env.example .env
 
-# Run the startup script
+# Edit with your actual API keys
+nano .env
+```
+
+### 2. Add your actual API keys
+
+Your `.env` file should look like this:
+
+```bash
+GOOGLE_API_KEY="your-actual-google-api-key-here"
+OPENAI_API_KEY="your-actual-openai-key-here"
+ALPHA_VANTAGE_API_KEY="your-actual-alpha-vantage-key-here"
+```
+
+**Important:**
+- Replace the placeholder text with your real API keys
+- At minimum, you need `GOOGLE_API_KEY` for Gemini
+- Your `.env` file is protected by `.gitignore` - it won't be committed to GitHub ✅
+
+## How to Start
+
+### Method 1: Use the startup script (Recommended)
+
+```bash
+cd /home/user/GeminiTrader
+
+# The script automatically loads .env file
 ./start.sh
 ```
+
+The script will:
+- ✓ Load API keys from `.env` file
+- ✓ Verify all requirements
+- ✓ Start the server
+- ✓ Show you all available URLs
 
 ### Method 2: Manual start
 
 ```bash
 cd /home/user/GeminiTrader
 
-# Set your API key
-export GOOGLE_API_KEY="your-google-api-key-here"
+# Load environment variables from .env
+export $(cat .env | grep -v '^#' | xargs)
 
 # Start the server
 uvicorn app:app --reload --host localhost --port 8000
@@ -42,7 +74,7 @@ Once the server is running, open your browser and go to:
 
 **http://localhost:8000**
 
-You should now see the **GeminiTrader frontend** (not JSON)!
+You should now see the **actual frontend UI** instead of JSON.
 
 ## What Changed
 
@@ -58,6 +90,11 @@ You should now see the **GeminiTrader frontend** (not JSON)!
 
 3. **Frontend (`frontend/index.html`)**:
    - CSS and JS paths updated to use `/static/` prefix
+
+4. **Environment Variables**:
+   - API keys are now loaded from `.env` file
+   - `.env` is protected by `.gitignore` (never committed to GitHub)
+   - Use `.env.example` as a template
 
 ## URL Structure
 
@@ -87,7 +124,7 @@ Once you open http://localhost:8000, you should see:
 
 ## Quick Test
 
-1. Start the server (see above)
+1. Start the server: `./start.sh`
 2. Open browser: http://localhost:8000
 3. Click **"Load Available Agents"** - should show all agents
 4. Select analysts and click **"Initialize Agents"**
@@ -107,8 +144,22 @@ Once you open http://localhost:8000, you should see:
 
 **API not connecting?**
 - Check the backend console for errors
-- Verify GOOGLE_API_KEY is set
+- Verify GOOGLE_API_KEY is set in `.env` file
 - Check if port 8000 is already in use
+
+**"GOOGLE_API_KEY not set" error?**
+- Make sure `.env` file exists
+- Check that `.env` has your API key (no quotes or spaces around =)
+- Run the startup script which loads `.env` automatically
+
+## Security
+
+✅ Your API keys are safe:
+- `.env` file is listed in `.gitignore`
+- Git will never commit your `.env` file
+- Only `.env.example` (with placeholders) is committed
+
+See `SECURITY.md` for more security information.
 
 ## Success Indicators
 
@@ -119,4 +170,6 @@ Once you open http://localhost:8000, you should see:
 
 ## Need Help?
 
-Check the full testing guide: `TEST_INSTRUCTIONS.md`
+- Security guide: `SECURITY.md`
+- Full testing guide: `TEST_INSTRUCTIONS.md`
+- Project documentation: `README.md`

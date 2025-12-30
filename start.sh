@@ -6,17 +6,43 @@ echo "GeminiTrader - Starting Backend"
 echo "=================================="
 echo ""
 
+# Load environment variables from .env file if it exists
+if [ -f ".env" ]; then
+    echo "✓ Found .env file, loading environment variables..."
+    export $(cat .env | grep -v '^#' | xargs)
+    echo "✓ Environment variables loaded from .env"
+else
+    echo "WARNING: .env file not found!"
+    echo ""
+    echo "Please create a .env file with your API keys:"
+    echo "  GOOGLE_API_KEY=\"your-google-api-key-here\""
+    echo "  OPENAI_API_KEY=\"your-openai-key-here\""
+    echo "  ALPHA_VANTAGE_API_KEY=\"your-alpha-vantage-key-here\""
+    echo ""
+fi
+echo ""
+
 # Check if GOOGLE_API_KEY is set
 if [ -z "$GOOGLE_API_KEY" ]; then
     echo "ERROR: GOOGLE_API_KEY environment variable is not set!"
     echo ""
-    echo "Please set it with:"
-    echo "  export GOOGLE_API_KEY=\"your-google-api-key-here\""
+    echo "Please add it to your .env file:"
+    echo "  GOOGLE_API_KEY=\"your-google-api-key-here\""
     echo ""
     exit 1
 fi
 
-echo "✓ GOOGLE_API_KEY is set"
+echo "✓ GOOGLE_API_KEY is configured"
+echo ""
+
+# Show optional API keys status
+if [ -n "$OPENAI_API_KEY" ]; then
+    echo "✓ OPENAI_API_KEY is configured (optional)"
+fi
+
+if [ -n "$ALPHA_VANTAGE_API_KEY" ]; then
+    echo "✓ ALPHA_VANTAGE_API_KEY is configured (optional)"
+fi
 echo ""
 
 # Check if we're in the right directory
