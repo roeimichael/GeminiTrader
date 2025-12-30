@@ -4,6 +4,9 @@ Fail-fast validation for ticker data
 
 from typing import Optional
 from .interface import route_to_vendor
+from tradingagents.logger_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class TickerValidationError(Exception):
@@ -12,7 +15,27 @@ class TickerValidationError(Exception):
 
 
 def validate_ticker_data(ticker: str, date: Optional[str] = None) -> dict:
-    """Validate that a ticker has accessible data before running agents"""
+    """
+    Validate that a ticker has accessible data before running agents
+
+    This function performs fail-fast validation to ensure a stock ticker
+    is valid and has accessible data before starting expensive multi-agent
+    analysis workflows.
+
+    Args:
+        ticker: Stock ticker symbol (e.g., "AAPL", "MSFT")
+        date: Optional date for validation context (currently unused)
+
+    Returns:
+        dict: Validation result containing:
+            - valid (bool): True if validation passed
+            - ticker (str): The validated ticker symbol
+            - sample_data (str): Sample of the data retrieved
+            - message (str): Success message
+
+    Raises:
+        TickerValidationError: If ticker is invalid, not found, or data is inaccessible
+    """
     if not ticker:
         raise TickerValidationError("Ticker is empty or None")
 
@@ -22,10 +45,10 @@ def validate_ticker_data(ticker: str, date: Optional[str] = None) -> dict:
         raise TickerValidationError(f"Invalid ticker format: '{ticker}' (must be alphanumeric)")
 
     if len(ticker) > 5:
-        print(f"WARNING: Unusually long ticker '{ticker}' - this might be invalid")
+        logger.warning(f"Unusually long ticker '{ticker}' - this might be invalid")
 
     try:
-        print(f"VALIDATION: Checking if ticker '{ticker}' has accessible data...")
+        logger.info(f"Checking if ticker '{ticker}' has accessible data...")
         stock_data = route_to_vendor("get_stock_data", ticker, period="1mo")
 
         if stock_data is None:
@@ -40,7 +63,7 @@ def validate_ticker_data(ticker: str, date: Optional[str] = None) -> dict:
             if len(stock_data) < 50:
                 raise TickerValidationError(f"Ticker '{ticker}' returned insufficient data (only {len(stock_data)} chars)")
 
-        print(f"VALIDATION_SUCCESS: Ticker '{ticker}' has accessible data [PASS]")
+        logger.info(f"Ticker '{ticker}' has accessible data [PASS]")
 
         return {
             "valid": True,
@@ -66,7 +89,20 @@ def validate_ticker_data(ticker: str, date: Optional[str] = None) -> dict:
 
 def validate_before_analysis(ticker: str, date: Optional[str] = None,
                              abort_on_failure: bool = True) -> bool:
-    """Convenience wrapper for validation with automatic error handling"""
+    """
+    Convenience wrapper for validation with automatic error handling
+
+    Args:
+        ticker: Stock ticker symbol to validate
+        date: Optional date for validation context
+        abort_on_failure: If True, raises exception on failure; if False, logs and returns False
+
+    Returns:
+        True if validation succeeds, False if validation fails and abort_on_failure is False
+
+    Raises:
+        TickerValidationError: If validation fails and abort_on_failure is True
+    """
     try:
         validate_ticker_data(ticker, date)
         return True
@@ -74,5 +110,5 @@ def validate_before_analysis(ticker: str, date: Optional[str] = None,
         if abort_on_failure:
             raise
         else:
-            print(f"VALIDATION_FAILED: {e}")
+            logger.error(f"Validation failed: {e}")
             return False

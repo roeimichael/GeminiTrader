@@ -5,6 +5,9 @@ Query Classifier for Intelligent Agent Selection
 from typing import List, Dict
 from langchain_google_genai import ChatGoogleGenerativeAI
 from tradingagents.config import DEFAULT_CONFIG
+from tradingagents.logger_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class QueryClassifier:
@@ -134,8 +137,8 @@ Now classify the user's query:"""
             return self._parse_llm_response(response_text)
 
         except Exception as e:
-            print(f"WARNING: LLM classification failed: {e}")
-            print(f"Falling back to keyword matches: {keyword_matches}")
+            logger.warning(f"LLM classification failed: {e}")
+            logger.info(f"Falling back to keyword matches: {keyword_matches}")
 
             if keyword_matches:
                 return {
@@ -182,7 +185,7 @@ Now classify the user's query:"""
                 complexity = line.replace("COMPLEXITY:", "").strip().lower()
 
         if not agents:
-            print("WARNING: No valid agents parsed from LLM response, using all agents")
+            logger.warning("No valid agents parsed from LLM response, using all agents")
             agents = ["market", "fundamentals", "news", "social"]
 
         cost_map = {1: "low", 2: "medium", 3: "high", 4: "high"}
@@ -197,14 +200,14 @@ Now classify the user's query:"""
         }
 
     def print_classification(self, classification: dict, query: str):
-        """Pretty-print classification results"""
-        print("\n" + "="*60)
-        print("QUERY CLASSIFICATION")
-        print("="*60)
-        print(f"Query: {query}")
-        print(f"Selected Agents: {', '.join(classification['selected_agents'])}")
-        print(f"Reasoning: {classification['reasoning']}")
-        print(f"Complexity: {classification['complexity']}")
-        print(f"Estimated Cost: {classification['estimated_cost']}")
-        print(f"Method: {classification['method']}")
-        print("="*60 + "\n")
+        """Log classification results for debugging"""
+        logger.info("="*60)
+        logger.info("QUERY CLASSIFICATION")
+        logger.info("="*60)
+        logger.info(f"Query: {query}")
+        logger.info(f"Selected Agents: {', '.join(classification['selected_agents'])}")
+        logger.info(f"Reasoning: {classification['reasoning']}")
+        logger.info(f"Complexity: {classification['complexity']}")
+        logger.info(f"Estimated Cost: {classification['estimated_cost']}")
+        logger.info(f"Method: {classification['method']}")
+        logger.info("="*60)
