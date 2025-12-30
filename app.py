@@ -7,11 +7,13 @@ API Documentation: http://localhost:8000/docs
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict
 from datetime import datetime
-from contextlib import asynccontextmanager
 import uuid
+import os
 
 from tradingagents.conversation_manager import ConversationManager
 from tradingagents.agent_pool import AgentPool, AgentRegistry
@@ -19,31 +21,12 @@ from tradingagents.logger_config import get_logger, enable_debug_mode, enable_pr
 
 logger = get_logger(__name__)
 
-sessions: Dict[str, dict] = {}
-default_session_id = "default"
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup
-    logger.info("="*60)
-    logger.info("GeminiTrader API Starting Up")
-    logger.info("="*60)
-    logger.info("FastAPI server initialized")
-    logger.info("API Documentation: http://localhost:8000/docs")
-    logger.info("Health Check: http://localhost:8000/api/health")
-    logger.info("="*60)
-    yield
-    # Shutdown
-    logger.info("GeminiTrader API shutting down")
-    sessions.clear()
-
 app = FastAPI(
     title="GeminiTrader API",
     description="Multi-Agent Stock Analysis System with LangGraph",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc",
-    lifespan=lifespan
+    redoc_url="/redoc"
 )
 
 app.add_middleware(
@@ -53,6 +36,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files for frontend
+frontend_path = os.path.join(os.path.dirname(__file__), "frontend")
+if os.path.exists(frontend_path):
+    app.mount("/static", StaticFiles(directory=frontend_path), name="static")
+
+sessions: Dict[str, dict] = {}
+default_session_id = "default"
 
 class AgentInfo(BaseModel):
     """Information about an available agent"""
@@ -67,7 +58,7 @@ class InitPoolRequest(BaseModel):
     selected_agents: List[str] = Field(
         ...,
         description="List of agent keys to initialize",
-        json_schema_extra={"example": ["market_analyst", "fundamentals_analyst", "news_analyst"]}
+        example=["market_analyst", "fundamentals_analyst", "news_analyst"]
     )
     session_id: Optional[str] = Field(
         default=None,
@@ -89,17 +80,17 @@ class QueryRequest(BaseModel):
     query: str = Field(
         ...,
         description="User's question about the stock",
-        json_schema_extra={"example": "What are your thoughts about investing in this stock?"}
+        example="What are your thoughts about investing in this stock?"
     )
     ticker: str = Field(
         ...,
         description="Stock ticker symbol",
-        json_schema_extra={"example": "AAPL"}
+        example="AAPL"
     )
     date: Optional[str] = Field(
         default=None,
         description="Analysis date in YYYY-MM-DD format",
-        json_schema_extra={"example": "2024-01-15"}
+        example="2024-01-15"
     )
     session_id: Optional[str] = Field(
         default=None,
@@ -135,6 +126,28 @@ class ErrorResponse(BaseModel):
 
 @app.get("/", tags=["General"])
 async def root():
+    """Serve the frontend HTML"""
+    frontend_file = os.path.join(os.path.dirname(__file__), "frontend", "index.html")
+    if os.path.exists(frontend_file):
+        return FileResponse(frontend_file)
+    else:
+        return {
+            "name": "GeminiTrader API",
+            "version": "1.0.0",
+            "description": "Multi-Agent Stock Analysis System",
+            "documentation": "/docs",
+            "health": "/api/health",
+            "endpoints": {
+                "agents": "/api/agents",
+                "initialize": "/api/initialize-pool",
+                "query": "/api/query",
+                "history": "/api/history"
+            }
+        }
+
+@app.get("/api/info", tags=["General"])
+async def api_info():
+    """Get API information as JSON"""
     return {
         "name": "GeminiTrader API",
         "version": "1.0.0",
@@ -160,24 +173,13 @@ async def health_check():
     }
 
 
-@app.get("/api/agents", tags=["Agents"])
+@app.get("/api/agents", response_model=Dict[str, AgentInfo], tags=["Agents"])
 async def get_available_agents():
     """Get all available agents with their descriptions and capabilities"""
     try:
-        agents_dict = AgentRegistry.get_all_agents()
-
-        serializable_agents = {}
-        for category, agents in agents_dict.items():
-            serializable_agents[category] = {}
-            for agent_id, agent_info in agents.items():
-                serializable_agents[category][agent_id] = {
-                    "name": agent_info["name"],
-                    "description": agent_info["description"],
-                    "requires_memory": agent_info["requires_memory"]
-                }
-
-        logger.info(f"Fetched {sum(len(agents) for agents in serializable_agents.values())} available agents")
-        return serializable_agents
+        agents = AgentRegistry.get_all_agents()
+        logger.info(f"Fetched {len(agents)} available agents")
+        return agents
     except Exception as e:
         logger.error(f"Error fetching agents: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -368,13 +370,18 @@ async def disable_debug():
     return {"status": "success", "message": "Debug logging disabled"}
 
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        "app:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True
-    )
+@app.on_event("startup")
+async def startup_event():
+    logger.info("="*60)
+    logger.info("GeminiTrader API Starting Up")
+    logger.info("="*60)
+    logger.info("FastAPI server initialized")
+    logger.info("API Documentation: http://localhost:8000/docs")
+    logger.info("Health Check: http://localhost:8000/api/health")
+    logger.info("="*60)
 
 
+@app.on_event("shutdown")
+async def shutdown_event():
+    logger.info("GeminiTrader API shutting down")
+    sessions.clear()
