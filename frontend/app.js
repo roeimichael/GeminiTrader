@@ -51,6 +51,71 @@ async function checkAPIHealth() {
     }
 }
 
+async function loadAgentsForSelection() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/agents`);
+        const agents = await response.json();
+
+        if (!response.ok) {
+            throw new Error('Failed to load agents');
+        }
+
+        const container = document.getElementById('agentsContainer');
+        const loadingDiv = document.getElementById('agentsLoading');
+
+        // Group agents by category
+        let html = '';
+        for (const [category, categoryAgents] of Object.entries(agents)) {
+            html += `
+                <div class="agent-category">
+                    <h3>
+                        ${category.charAt(0).toUpperCase() + category.slice(1)}
+                        <span class="category-actions">
+                            <button onclick="selectAllInCategory('${category}')">Select All</button>
+                            <button onclick="deselectAllInCategory('${category}')">Deselect All</button>
+                        </span>
+                    </h3>
+                    <div class="checkbox-group" data-category="${category}">
+            `;
+
+            for (const [agentId, agentInfo] of Object.entries(categoryAgents)) {
+                html += `
+                    <label class="checkbox-label">
+                        <div>
+                            <input type="checkbox" value="${agentId}" name="agent">
+                            <span>${agentInfo.name || agentId}</span>
+                        </div>
+                        <small>${agentInfo.description || 'No description'}</small>
+                        ${agentInfo.requires_memory ? '<small style="color: var(--primary-color);">Requires Memory</small>' : ''}
+                    </label>
+                `;
+            }
+
+            html += `
+                    </div>
+                </div>
+            `;
+        }
+
+        container.innerHTML = html;
+        container.style.display = 'block';
+        loadingDiv.style.display = 'none';
+
+    } catch (error) {
+        document.getElementById('agentsLoading').textContent = `Error loading agents: ${error.message}`;
+    }
+}
+
+function selectAllInCategory(category) {
+    const checkboxes = document.querySelectorAll(`.checkbox-group[data-category="${category}"] input[type="checkbox"]`);
+    checkboxes.forEach(cb => cb.checked = true);
+}
+
+function deselectAllInCategory(category) {
+    const checkboxes = document.querySelectorAll(`.checkbox-group[data-category="${category}"] input[type="checkbox"]`);
+    checkboxes.forEach(cb => cb.checked = false);
+}
+
 function getSelectedAnalysts() {
     const checkboxes = document.querySelectorAll('.checkbox-group input[type="checkbox"]:checked');
     return Array.from(checkboxes).map(cb => cb.value);
@@ -626,6 +691,7 @@ window.addEventListener('DOMContentLoaded', () => {
     setTodayDate();
     setupTabs();
     checkAPIHealth();
+    loadAgentsForSelection(); // Load agents for selection on page load
 
     setInterval(checkAPIHealth, 30000);
 });
