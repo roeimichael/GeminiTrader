@@ -38,9 +38,15 @@ app.add_middleware(
 )
 
 # Mount static files for frontend
-frontend_path = os.path.join(os.path.dirname(__file__), "frontend")
+base_dir = os.path.dirname(os.path.abspath(__file__))
+frontend_path = os.path.join(base_dir, "frontend")
+logger.info(f"Frontend path: {frontend_path}")
+logger.info(f"Frontend path exists: {os.path.exists(frontend_path)}")
 if os.path.exists(frontend_path):
     app.mount("/static", StaticFiles(directory=frontend_path), name="static")
+    logger.info(f"Mounted static files from: {frontend_path}")
+else:
+    logger.warning(f"Frontend directory not found at: {frontend_path}")
 
 sessions: Dict[str, dict] = {}
 default_session_id = "default"
@@ -127,7 +133,14 @@ class ErrorResponse(BaseModel):
 @app.get("/", tags=["General"])
 async def root():
     """Serve the frontend HTML"""
-    frontend_file = os.path.join(os.path.dirname(__file__), "frontend", "index.html")
+    # Get absolute path to handle Windows correctly
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    frontend_file = os.path.join(base_dir, "frontend", "index.html")
+
+    # Debug logging
+    logger.info(f"Looking for frontend at: {frontend_file}")
+    logger.info(f"File exists: {os.path.exists(frontend_file)}")
+
     if os.path.exists(frontend_file):
         return FileResponse(frontend_file)
     else:
