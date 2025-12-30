@@ -18,8 +18,68 @@
         </header>
 
         <main>
+            <!-- Available Agents Card -->
             <div class="card">
-                <h2>Configuration</h2>
+                <h2>Available Agents</h2>
+                <button id="loadAgentsBtn" class="btn btn-primary" style="margin-bottom: 1rem;">
+                    Load Available Agents
+                </button>
+                <div id="availableAgentsContent" style="display: none;">
+                    <div id="agentsListContent"></div>
+                </div>
+            </div>
+
+            <!-- Session Management Card -->
+            <div class="card">
+                <h2>Session Management</h2>
+                <div class="button-group" style="margin-bottom: 1rem;">
+                    <button id="listSessionsBtn" class="btn btn-primary">
+                        List Active Sessions
+                    </button>
+                    <button id="deleteSessionBtn" class="btn btn-secondary">
+                        Delete Current Session
+                    </button>
+                </div>
+                <div id="sessionsContent" style="display: none;">
+                    <div id="sessionsListContent"></div>
+                </div>
+            </div>
+
+            <!-- Debug Controls Card -->
+            <div class="card">
+                <h2>Debug Controls</h2>
+                <div class="button-group">
+                    <button id="enableDebugBtn" class="btn btn-primary">
+                        Enable Debug Mode
+                    </button>
+                    <button id="disableDebugBtn" class="btn btn-secondary">
+                        Disable Debug Mode
+                    </button>
+                </div>
+                <p style="margin-top: 1rem; color: var(--text-secondary);">
+                    Debug mode shows detailed logs in the backend console
+                </p>
+            </div>
+
+            <!-- History Card -->
+            <div class="card">
+                <h2>Query History</h2>
+                <div class="button-group" style="margin-bottom: 1rem;">
+                    <button id="viewHistoryBtn" class="btn btn-primary">
+                        View History
+                    </button>
+                    <button id="clearHistoryBtn" class="btn btn-secondary">
+                        Clear History
+                    </button>
+                </div>
+                <div id="historyContent" style="display: none;">
+                    <div id="historyListContent"></div>
+                </div>
+            </div>
+
+            <!-- Main Configuration Card -->
+            <div class="card">
+                <h2>Stock Analysis Configuration</h2>
 
                 <div class="form-group">
                     <label for="ticker">Stock Ticker Symbol</label>

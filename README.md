@@ -129,7 +129,7 @@ export ALPHA_VANTAGE_API_KEY="your-alpha-vantage-key"  # Optional
 export OPENAI_API_KEY="your-openai-key"  # Optional
 
 # Run the server
-uvicorn app:app --reload --host 0.0.0.0 --port 8000
+uvicorn app:app --reload --host localhost --port 8000
 ```
 
 The API will be available at:

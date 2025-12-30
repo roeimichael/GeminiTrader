@@ -13,7 +13,20 @@ const elements = {
     resultsCard: document.getElementById('resultsCard'),
     loadingCard: document.getElementById('loadingCard'),
     apiStatus: document.getElementById('apiStatus'),
-    apiStatusText: document.getElementById('apiStatusText')
+    apiStatusText: document.getElementById('apiStatusText'),
+    loadAgentsBtn: document.getElementById('loadAgentsBtn'),
+    availableAgentsContent: document.getElementById('availableAgentsContent'),
+    agentsListContent: document.getElementById('agentsListContent'),
+    listSessionsBtn: document.getElementById('listSessionsBtn'),
+    deleteSessionBtn: document.getElementById('deleteSessionBtn'),
+    sessionsContent: document.getElementById('sessionsContent'),
+    sessionsListContent: document.getElementById('sessionsListContent'),
+    enableDebugBtn: document.getElementById('enableDebugBtn'),
+    disableDebugBtn: document.getElementById('disableDebugBtn'),
+    viewHistoryBtn: document.getElementById('viewHistoryBtn'),
+    clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+    historyContent: document.getElementById('historyContent'),
+    historyListContent: document.getElementById('historyListContent')
 };
 
 function setTodayDate() {
@@ -55,6 +68,265 @@ function showError(message) {
     alert(`Error: ${message}`);
 }
 
+function showSuccess(message) {
+    alert(`Success: ${message}`);
+}
+
+async function loadAvailableAgents() {
+    elements.loadAgentsBtn.disabled = true;
+    elements.loadAgentsBtn.textContent = 'Loading...';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/agents`);
+        const data = await response.json();
+
+        if (response.ok) {
+            displayAvailableAgents(data);
+            elements.availableAgentsContent.style.display = 'block';
+        } else {
+            throw new Error('Failed to load agents');
+        }
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        elements.loadAgentsBtn.disabled = false;
+        elements.loadAgentsBtn.textContent = 'Reload Available Agents';
+    }
+}
+
+function displayAvailableAgents(agents) {
+    let html = '';
+
+    for (const [category, categoryAgents] of Object.entries(agents)) {
+        html += `<div class="result-section">`;
+        html += `<h3>${category.charAt(0).toUpperCase() + category.slice(1)}</h3>`;
+
+        for (const [agentId, agentInfo] of Object.entries(categoryAgents)) {
+            html += `
+                <div style="margin-bottom: 1rem; padding: 1rem; background: var(--bg-color); border-radius: 0.5rem;">
+                    <strong>${agentInfo.name || agentId}</strong><br>
+                    <small>${agentInfo.description || 'No description'}</small><br>
+                    <small style="color: var(--text-secondary);">
+                        Memory: ${agentInfo.requires_memory ? 'Yes' : 'No'}
+                    </small>
+                </div>
+            `;
+        }
+        html += `</div>`;
+    }
+
+    elements.agentsListContent.innerHTML = html;
+}
+
+async function listSessions() {
+    elements.listSessionsBtn.disabled = true;
+    elements.listSessionsBtn.textContent = 'Loading...';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/sessions`);
+        const data = await response.json();
+
+        if (response.ok) {
+            displaySessions(data);
+            elements.sessionsContent.style.display = 'block';
+        } else {
+            throw new Error('Failed to load sessions');
+        }
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        elements.listSessionsBtn.disabled = false;
+        elements.listSessionsBtn.textContent = 'Reload Sessions';
+    }
+}
+
+function displaySessions(data) {
+    if (data.total === 0) {
+        elements.sessionsListContent.innerHTML = '<p>No active sessions</p>';
+        return;
+    }
+
+    let html = `<div class="result-section">`;
+    html += `<h3>Total Sessions: ${data.total}</h3>`;
+
+    for (const [sid, sessionData] of Object.entries(data.sessions)) {
+        html += `
+            <div style="margin-bottom: 1rem; padding: 1rem; background: var(--bg-color); border-radius: 0.5rem; border-left: 4px solid var(--primary-color);">
+                <strong>Session ID: ${sid}</strong><br>
+                <small>Created: ${sessionData.created_at}</small><br>
+                <small>Agents: ${sessionData.agent_count} (${sessionData.agents.join(', ')})</small>
+            </div>
+        `;
+    }
+
+    html += `</div>`;
+    elements.sessionsListContent.innerHTML = html;
+}
+
+async function deleteSession() {
+    const sid = sessionId || 'default';
+
+    if (!confirm(`Are you sure you want to delete session "${sid}"?`)) {
+        return;
+    }
+
+    elements.deleteSessionBtn.disabled = true;
+    elements.deleteSessionBtn.textContent = 'Deleting...';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/session/${sid}`, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showSuccess(data.message);
+            sessionId = null;
+            isInitialized = false;
+            elements.analyzeBtn.disabled = true;
+            elements.initializeBtn.textContent = 'Initialize Agents';
+        } else {
+            throw new Error(data.detail || 'Failed to delete session');
+        }
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        elements.deleteSessionBtn.disabled = false;
+        elements.deleteSessionBtn.textContent = 'Delete Current Session';
+    }
+}
+
+async function enableDebug() {
+    elements.enableDebugBtn.disabled = true;
+    elements.enableDebugBtn.textContent = 'Enabling...';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/debug/enable`, {
+            method: 'POST'
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showSuccess(data.message);
+        } else {
+            throw new Error('Failed to enable debug mode');
+        }
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        elements.enableDebugBtn.disabled = false;
+        elements.enableDebugBtn.textContent = 'Enable Debug Mode';
+    }
+}
+
+async function disableDebug() {
+    elements.disableDebugBtn.disabled = true;
+    elements.disableDebugBtn.textContent = 'Disabling...';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/debug/disable`, {
+            method: 'POST'
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showSuccess(data.message);
+        } else {
+            throw new Error('Failed to disable debug mode');
+        }
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        elements.disableDebugBtn.disabled = false;
+        elements.disableDebugBtn.textContent = 'Disable Debug Mode';
+    }
+}
+
+async function viewHistory() {
+    const sid = sessionId || 'default';
+
+    elements.viewHistoryBtn.disabled = true;
+    elements.viewHistoryBtn.textContent = 'Loading...';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/history?session_id=${sid}&limit=10`);
+        const data = await response.json();
+
+        if (response.ok) {
+            displayHistory(data);
+            elements.historyContent.style.display = 'block';
+        } else {
+            throw new Error('Failed to load history');
+        }
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        elements.viewHistoryBtn.disabled = false;
+        elements.viewHistoryBtn.textContent = 'Reload History';
+    }
+}
+
+function displayHistory(history) {
+    if (!history || history.length === 0) {
+        elements.historyListContent.innerHTML = '<p>No history available</p>';
+        return;
+    }
+
+    let html = '<div class="result-section">';
+    html += `<h3>Recent Queries (${history.length})</h3>`;
+
+    history.forEach((item, index) => {
+        const recommendation = item.final_verdict?.overall_recommendation || 'N/A';
+        const ticker = item.ticker || 'N/A';
+
+        html += `
+            <div style="margin-bottom: 1rem; padding: 1rem; background: var(--bg-color); border-radius: 0.5rem; border-left: 4px solid var(--success-color);">
+                <strong>#${index + 1} - ${ticker}</strong><br>
+                <small>Time: ${item.timestamp}</small><br>
+                <small>Query: ${item.query ? item.query.substring(0, 100) : 'N/A'}...</small><br>
+                <small style="color: var(--primary-color);">Recommendation: ${recommendation}</small>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    elements.historyListContent.innerHTML = html;
+}
+
+async function clearHistory() {
+    const sid = sessionId || 'default';
+
+    if (!confirm(`Are you sure you want to clear history for session "${sid}"?`)) {
+        return;
+    }
+
+    elements.clearHistoryBtn.disabled = true;
+    elements.clearHistoryBtn.textContent = 'Clearing...';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/history?session_id=${sid}`, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showSuccess(data.message);
+            elements.historyContent.style.display = 'none';
+        } else {
+            throw new Error('Failed to clear history');
+        }
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        elements.clearHistoryBtn.disabled = false;
+        elements.clearHistoryBtn.textContent = 'Clear History';
+    }
+}
+
 async function initializeAgents() {
     const selectedAnalysts = getSelectedAnalysts();
 
@@ -85,7 +357,7 @@ async function initializeAgents() {
             isInitialized = true;
             elements.analyzeBtn.disabled = false;
             elements.initializeBtn.textContent = 'Re-initialize Agents';
-            showError(`Success: Initialized ${data.agent_count} agents`);
+            showSuccess(`Initialized ${data.agent_count} agents`);
         } else {
             throw new Error(data.detail || 'Failed to initialize agents');
         }
@@ -214,8 +486,8 @@ function displayAnalysts(responses) {
 
     const html = responses.map(response => `
         <div class="result-section">
-            <h3>${response.analyst || 'Analyst'}</h3>
-            <p>${response.analysis || response.response || 'No analysis provided'}</p>
+            <h3>${response.agent || 'Analyst'}</h3>
+            <p style="white-space: pre-wrap;">${response.response || response.analysis || 'No analysis provided'}</p>
         </div>
     `).join('');
 
@@ -230,21 +502,31 @@ function displayDebate(debate) {
         return;
     }
 
-    const html = debate.map(entry => {
-        const isBull = entry.speaker && entry.speaker.toLowerCase().includes('bull');
-        const isBear = entry.speaker && entry.speaker.toLowerCase().includes('bear');
-        const debateClass = isBull ? 'bull' : (isBear ? 'bear' : '');
+    let html = '';
 
-        return `
-            <div class="debate-entry ${debateClass}">
-                <div class="debate-header">
-                    <span class="debate-speaker">${entry.speaker || 'Speaker'}</span>
-                    <span class="debate-round">Round ${entry.round || 'N/A'}</span>
-                </div>
-                <p>${entry.argument || entry.message || 'No argument provided'}</p>
-            </div>
-        `;
-    }).join('');
+    debate.forEach(round => {
+        html += `<div class="result-section">`;
+        html += `<h3>Round ${round.round}: ${round.topic || 'Debate'}</h3>`;
+
+        if (round.exchanges && round.exchanges.length > 0) {
+            round.exchanges.forEach(exchange => {
+                const isBull = exchange.speaker && exchange.speaker.toLowerCase().includes('bull');
+                const isBear = exchange.speaker && exchange.speaker.toLowerCase().includes('bear');
+                const debateClass = isBull ? 'bull' : (isBear ? 'bear' : '');
+
+                html += `
+                    <div class="debate-entry ${debateClass}">
+                        <div class="debate-header">
+                            <span class="debate-speaker">${exchange.speaker || 'Speaker'}</span>
+                        </div>
+                        <p style="white-space: pre-wrap;">${exchange.statement || exchange.argument || exchange.message || 'No statement provided'}</p>
+                    </div>
+                `;
+            });
+        }
+
+        html += `</div>`;
+    });
 
     content.innerHTML = html;
 }
@@ -257,20 +539,39 @@ function displayVerdict(verdict) {
         return;
     }
 
-    const html = `
+    let html = `
         <div class="verdict-box">
-            <h3>Final Recommendation</h3>
-            <p>${verdict.summary || verdict.decision || verdict.recommendation || 'No verdict provided'}</p>
+            <h3>Final Recommendation: ${verdict.overall_recommendation || 'N/A'}</h3>
         </div>
 
-        ${verdict.confidence ? `
-            <div class="result-section" style="margin-top: 1.5rem;">
-                <h3>Additional Details</h3>
-                <p><strong>Confidence:</strong> ${verdict.confidence}</p>
-                ${verdict.key_points ? `<p><strong>Key Points:</strong> ${verdict.key_points}</p>` : ''}
-            </div>
-        ` : ''}
+        <div class="result-section" style="margin-top: 1.5rem;">
+            <h3>Summary</h3>
+            <p style="white-space: pre-wrap;">${verdict.summary || verdict.decision || verdict.recommendation || verdict.final_trade_decision || 'No verdict provided'}</p>
+        </div>
     `;
+
+    if (verdict.confidence_level || verdict.sentiment_breakdown) {
+        html += `<div class="result-section">`;
+        html += `<h3>Additional Details</h3>`;
+
+        if (verdict.confidence_level) {
+            html += `<p><strong>Confidence:</strong> ${verdict.confidence_level}</p>`;
+        }
+
+        if (verdict.sentiment_breakdown) {
+            html += `
+                <p><strong>Sentiment Breakdown:</strong></p>
+                <ul>
+                    <li>Bullish: ${verdict.sentiment_breakdown.bullish || 0}</li>
+                    <li>Bearish: ${verdict.sentiment_breakdown.bearish || 0}</li>
+                    <li>Neutral: ${verdict.sentiment_breakdown.neutral || 0}</li>
+                    <li>Bullish %: ${verdict.sentiment_breakdown.bullish_percentage || 0}%</li>
+                </ul>
+            `;
+        }
+
+        html += `</div>`;
+    }
 
     content.innerHTML = html;
 }
@@ -299,6 +600,14 @@ function setupTabs() {
     });
 }
 
+// Event Listeners
+elements.loadAgentsBtn.addEventListener('click', loadAvailableAgents);
+elements.listSessionsBtn.addEventListener('click', listSessions);
+elements.deleteSessionBtn.addEventListener('click', deleteSession);
+elements.enableDebugBtn.addEventListener('click', enableDebug);
+elements.disableDebugBtn.addEventListener('click', disableDebug);
+elements.viewHistoryBtn.addEventListener('click', viewHistory);
+elements.clearHistoryBtn.addEventListener('click', clearHistory);
 elements.initializeBtn.addEventListener('click', initializeAgents);
 elements.analyzeBtn.addEventListener('click', runAnalysis);
 elements.clearBtn.addEventListener('click', clearResults);
