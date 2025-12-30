@@ -9,6 +9,9 @@ import functools
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Callable, Optional
+from tradingagents.logger_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class DiskCache:
@@ -49,18 +52,18 @@ class DiskCache:
             expiry_time = cached_time + timedelta(hours=self.ttl_hours)
 
             if datetime.now() > expiry_time:
-                print(f"CACHE_EXPIRED: {func_name} - cached {self.ttl_hours}h ago")
+                logger.debug(f"Cache expired for {func_name} - cached {self.ttl_hours}h ago")
                 cache_path.unlink()
                 return None
 
             age = datetime.now() - cached_time
             age_str = f"{age.total_seconds() / 3600:.1f}h ago" if age.total_seconds() >= 3600 else f"{age.total_seconds() / 60:.0f}m ago"
-            print(f"CACHE_HIT: {func_name} - loaded from cache (cached {age_str})")
+            logger.debug(f"Cache hit for {func_name} - loaded from cache (cached {age_str})")
 
             return cached_data['value']
 
         except (json.JSONDecodeError, KeyError, ValueError) as e:
-            print(f"CACHE_CORRUPT: {func_name} - deleting corrupted cache: {e}")
+            logger.warning(f"Corrupted cache for {func_name} - deleting: {e}")
             cache_path.unlink()
             return None
 
@@ -80,9 +83,9 @@ class DiskCache:
         try:
             with open(cache_path, 'w') as f:
                 json.dump(cached_data, f, indent=2)
-            print(f"CACHE_SAVE: {func_name} - saved to disk cache")
+            logger.debug(f"Saved {func_name} to disk cache")
         except Exception as e:
-            print(f"CACHE_WRITE_FAILED: {func_name} - {e}")
+            logger.error(f"Cache write failed for {func_name}: {e}")
 
     def clear_all(self) -> int:
         """Clear all cache files"""
@@ -90,7 +93,7 @@ class DiskCache:
         for cache_file in self.cache_dir.glob("*.json"):
             cache_file.unlink()
             count += 1
-        print(f"CACHE_CLEARED: Deleted {count} cache files")
+        logger.info(f"Cleared cache: deleted {count} cache files")
         return count
 
     def clear_expired(self) -> int:
@@ -112,7 +115,7 @@ class DiskCache:
                 count += 1
 
         if count > 0:
-            print(f"CACHE_CLEANUP: Deleted {count} expired cache files")
+            logger.info(f"Cache cleanup: deleted {count} expired cache files")
         return count
 
 
@@ -138,7 +141,7 @@ def cached(ttl_hours: int = 24, cache_dir: str = "dataflows/data_cache"):
             if cached_value is not None:
                 return cached_value
 
-            print(f"CACHE_MISS: {func.__name__} - fetching from API...")
+            logger.debug(f"Cache miss for {func.__name__} - fetching from API")
             result = func(*args, **kwargs)
 
             cache.set(func.__name__, args, kwargs, result)
