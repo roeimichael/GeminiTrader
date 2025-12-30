@@ -7,10 +7,13 @@ API Documentation: http://localhost:8000/docs
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict
 from datetime import datetime
 import uuid
+import os
 
 from tradingagents.conversation_manager import ConversationManager
 from tradingagents.agent_pool import AgentPool, AgentRegistry
@@ -33,6 +36,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files for frontend
+frontend_path = os.path.join(os.path.dirname(__file__), "frontend")
+if os.path.exists(frontend_path):
+    app.mount("/static", StaticFiles(directory=frontend_path), name="static")
 
 sessions: Dict[str, dict] = {}
 default_session_id = "default"
@@ -118,6 +126,28 @@ class ErrorResponse(BaseModel):
 
 @app.get("/", tags=["General"])
 async def root():
+    """Serve the frontend HTML"""
+    frontend_file = os.path.join(os.path.dirname(__file__), "frontend", "index.html")
+    if os.path.exists(frontend_file):
+        return FileResponse(frontend_file)
+    else:
+        return {
+            "name": "GeminiTrader API",
+            "version": "1.0.0",
+            "description": "Multi-Agent Stock Analysis System",
+            "documentation": "/docs",
+            "health": "/api/health",
+            "endpoints": {
+                "agents": "/api/agents",
+                "initialize": "/api/initialize-pool",
+                "query": "/api/query",
+                "history": "/api/history"
+            }
+        }
+
+@app.get("/api/info", tags=["General"])
+async def api_info():
+    """Get API information as JSON"""
     return {
         "name": "GeminiTrader API",
         "version": "1.0.0",
