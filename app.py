@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict
 from datetime import datetime
+from contextlib import asynccontextmanager
 import uuid
 
 from tradingagents.conversation_manager import ConversationManager
@@ -18,12 +19,31 @@ from tradingagents.logger_config import get_logger, enable_debug_mode, enable_pr
 
 logger = get_logger(__name__)
 
+sessions: Dict[str, dict] = {}
+default_session_id = "default"
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logger.info("="*60)
+    logger.info("GeminiTrader API Starting Up")
+    logger.info("="*60)
+    logger.info("FastAPI server initialized")
+    logger.info("API Documentation: http://localhost:8000/docs")
+    logger.info("Health Check: http://localhost:8000/api/health")
+    logger.info("="*60)
+    yield
+    # Shutdown
+    logger.info("GeminiTrader API shutting down")
+    sessions.clear()
+
 app = FastAPI(
     title="GeminiTrader API",
     description="Multi-Agent Stock Analysis System with LangGraph",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 app.add_middleware(
@@ -33,9 +53,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-sessions: Dict[str, dict] = {}
-default_session_id = "default"
 
 class AgentInfo(BaseModel):
     """Information about an available agent"""
@@ -50,7 +67,7 @@ class InitPoolRequest(BaseModel):
     selected_agents: List[str] = Field(
         ...,
         description="List of agent keys to initialize",
-        example=["market_analyst", "fundamentals_analyst", "news_analyst"]
+        json_schema_extra={"example": ["market_analyst", "fundamentals_analyst", "news_analyst"]}
     )
     session_id: Optional[str] = Field(
         default=None,
@@ -72,17 +89,17 @@ class QueryRequest(BaseModel):
     query: str = Field(
         ...,
         description="User's question about the stock",
-        example="What are your thoughts about investing in this stock?"
+        json_schema_extra={"example": "What are your thoughts about investing in this stock?"}
     )
     ticker: str = Field(
         ...,
         description="Stock ticker symbol",
-        example="AAPL"
+        json_schema_extra={"example": "AAPL"}
     )
     date: Optional[str] = Field(
         default=None,
         description="Analysis date in YYYY-MM-DD format",
-        example="2024-01-15"
+        json_schema_extra={"example": "2024-01-15"}
     )
     session_id: Optional[str] = Field(
         default=None,
@@ -351,18 +368,3 @@ async def disable_debug():
     return {"status": "success", "message": "Debug logging disabled"}
 
 
-@app.on_event("startup")
-async def startup_event():
-    logger.info("="*60)
-    logger.info("GeminiTrader API Starting Up")
-    logger.info("="*60)
-    logger.info("FastAPI server initialized")
-    logger.info("API Documentation: http://localhost:8000/docs")
-    logger.info("Health Check: http://localhost:8000/api/health")
-    logger.info("="*60)
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("GeminiTrader API shutting down")
-    sessions.clear()
