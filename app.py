@@ -225,13 +225,26 @@ async def health_check():
     }
 
 
-@app.get("/api/agents", response_model=Dict[str, AgentInfo], tags=["Agents"])
+@app.get("/api/agents", tags=["Agents"])
 async def get_available_agents():
     """Get all available agents with their descriptions and capabilities"""
     try:
-        agents = AgentRegistry.get_all_agents()
-        logger.info(f"Fetched {len(agents)} available agents")
-        return agents
+        agents_raw = AgentRegistry.get_all_agents()
+
+        # Transform the data to match frontend expectations and remove factory functions
+        agents_response = {}
+        for category, agents_dict in agents_raw.items():
+            agents_response[category] = {}
+            for agent_id, info in agents_dict.items():
+                agents_response[category][agent_id] = {
+                    "name": info["name"],
+                    "description": info["description"],
+                    "category": category,
+                    "requires_memory": info["requires_memory"]
+                }
+
+        logger.info(f"Fetched {sum(len(v) for v in agents_response.values())} available agents")
+        return agents_response
     except Exception as e:
         logger.error(f"Error fetching agents: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
