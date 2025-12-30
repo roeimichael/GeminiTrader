@@ -7,7 +7,6 @@ results
 env/
 __pycache__/
 .DS_Store
-src/
 eval_results/
 eval_data/
 *.egg-info/
