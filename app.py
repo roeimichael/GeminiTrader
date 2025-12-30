@@ -5,6 +5,10 @@ Run with: uvicorn app:app --reload --host localhost --port 8000
 API Documentation: http://localhost:8000/docs
 """
 
+# Load environment variables from .env file FIRST (before other imports)
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
