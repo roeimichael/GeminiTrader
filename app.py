@@ -1,7 +1,7 @@
 """
 GeminiTrader FastAPI Backend
 
-Run with: uvicorn app:app --reload --host 0.0.0.0 --port 8000
+Run with: uvicorn app:app --reload --host localhost --port 8000
 API Documentation: http://localhost:8000/docs
 """
 
