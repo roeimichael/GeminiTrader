@@ -1,175 +1,26 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GeminiTrader - Multi-Agent Stock Analysis</title>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>GeminiTrader</h1>
-            <p class="subtitle">Multi-Agent Stock Analysis System</p>
-            <div class="status-indicator">
-                <span class="status-dot" id="apiStatus"></span>
-                <span id="apiStatusText">Checking API...</span>
-            </div>
-        </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- TODO: Set the document title to the name of your application -->
+    <title>Lovable App</title>
+    <meta name="description" content="Lovable Generated Project" />
+    <meta name="author" content="Lovable" />
 
-        <main>
-            <!-- Available Agents Card -->
-            <div class="card">
-                <h2>Available Agents</h2>
-                <button id="loadAgentsBtn" class="btn btn-primary" style="margin-bottom: 1rem;">
-                    Load Available Agents
-                </button>
-                <div id="availableAgentsContent" style="display: none;">
-                    <div id="agentsListContent"></div>
-                </div>
-            </div>
+    <!-- TODO: Update og:title to match your application name -->
+    <meta property="og:title" content="Lovable App" />
+    <meta property="og:description" content="Lovable Generated Project" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
 
-            <!-- Session Management Card -->
-            <div class="card">
-                <h2>Session Management</h2>
-                <div class="button-group" style="margin-bottom: 1rem;">
-                    <button id="listSessionsBtn" class="btn btn-primary">
-                        List Active Sessions
-                    </button>
-                    <button id="deleteSessionBtn" class="btn btn-secondary">
-                        Delete Current Session
-                    </button>
-                </div>
-                <div id="sessionsContent" style="display: none;">
-                    <div id="sessionsListContent"></div>
-                </div>
-            </div>
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@Lovable" />
+    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+  </head>
 
-            <!-- Debug Controls Card -->
-            <div class="card">
-                <h2>Debug Controls</h2>
-                <div class="button-group">
-                    <button id="enableDebugBtn" class="btn btn-primary">
-                        Enable Debug Mode
-                    </button>
-                    <button id="disableDebugBtn" class="btn btn-secondary">
-                        Disable Debug Mode
-                    </button>
-                </div>
-                <p style="margin-top: 1rem; color: var(--text-secondary);">
-                    Debug mode shows detailed logs in the backend console
-                </p>
-            </div>
-
-            <!-- History Card -->
-            <div class="card">
-                <h2>Query History</h2>
-                <div class="button-group" style="margin-bottom: 1rem;">
-                    <button id="viewHistoryBtn" class="btn btn-primary">
-                        View History
-                    </button>
-                    <button id="clearHistoryBtn" class="btn btn-secondary">
-                        Clear History
-                    </button>
-                </div>
-                <div id="historyContent" style="display: none;">
-                    <div id="historyListContent"></div>
-                </div>
-            </div>
-
-            <!-- Main Configuration Card -->
-            <div class="card">
-                <h2>Stock Analysis Configuration</h2>
-
-                <div class="form-group">
-                    <label for="ticker">Stock Ticker Symbol</label>
-                    <input
-                        type="text"
-                        id="ticker"
-                        placeholder="e.g., AAPL, MSFT, TSLA"
-                        maxlength="10"
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label for="tradeDate">Analysis Date</label>
-                    <input
-                        type="date"
-                        id="tradeDate"
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label for="query">Your Question</label>
-                    <textarea
-                        id="query"
-                        placeholder="e.g., Should I invest in this stock? What are the risks?"
-                        rows="3"
-                    ></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label>Select Agents (Loading...)</label>
-                    <div id="agentsLoading" class="loading-agents">
-                        Loading available agents...
-                    </div>
-                    <div id="agentsContainer" style="display: none;">
-                        <!-- Agents will be dynamically loaded here -->
-                    </div>
-                </div>
-
-                <div class="button-group">
-                    <button id="initializeBtn" class="btn btn-primary">
-                        Initialize Agents
-                    </button>
-                    <button id="analyzeBtn" class="btn btn-success" disabled>
-                        Run Analysis
-                    </button>
-                    <button id="clearBtn" class="btn btn-secondary">
-                        Clear Results
-                    </button>
-                </div>
-            </div>
-
-            <div class="card results-card" id="resultsCard" style="display: none;">
-                <h2>Analysis Results</h2>
-
-                <div class="results-tabs">
-                    <button class="tab-btn active" data-tab="classification">Classification</button>
-                    <button class="tab-btn" data-tab="analysts">Analysts</button>
-                    <button class="tab-btn" data-tab="debate">Debate</button>
-                    <button class="tab-btn" data-tab="verdict">Final Verdict</button>
-                </div>
-
-                <div class="tab-content active" id="classification">
-                    <div id="classificationContent"></div>
-                </div>
-
-                <div class="tab-content" id="analysts">
-                    <div id="analystsContent"></div>
-                </div>
-
-                <div class="tab-content" id="debate">
-                    <div id="debateContent"></div>
-                </div>
-
-                <div class="tab-content" id="verdict">
-                    <div id="verdictContent"></div>
-                </div>
-            </div>
-
-            <div class="card loading-card" id="loadingCard" style="display: none;">
-                <div class="loading-spinner"></div>
-                <p class="loading-text">Running multi-agent analysis...</p>
-                <p class="loading-subtext" id="loadingSubtext">This may take 30-60 seconds</p>
-            </div>
-        </main>
-
-        <footer>
-            <p>Powered by Google Gemini AI & LangGraph</p>
-        </footer>
-    </div>
-
-    <script src="/static/app.js"></script>
-</body>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
