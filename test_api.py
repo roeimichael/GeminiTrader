@@ -357,12 +357,12 @@ def run_comprehensive_tests():
 
     time.sleep(2)
 
-    # Test 5: Initialize Pool with more agents
+    # Test 5: Initialize Pool with more agents (excluding news_analyst due to local data requirements)
     session_2 = "test_session_full"
     full_agents = [
         "market_analyst",
         "fundamentals_analyst",
-        "news_analyst",
+        # "news_analyst",  # Commented out - requires local news data or OpenAI API
         "bull_researcher",
         "bear_researcher"
     ]
