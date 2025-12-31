@@ -146,7 +146,7 @@ class AgentPool:
             raise ValueError("GOOGLE_API_KEY not found in environment")
 
         self.llm_quick = ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash-exp",
+            model="gemini-1.5-flash",
             google_api_key=api_key
         )
 
