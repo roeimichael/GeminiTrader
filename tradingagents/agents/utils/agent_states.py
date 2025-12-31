@@ -7,6 +7,17 @@ from langgraph.prebuilt import ToolNode
 from langgraph.graph import END, StateGraph, START, MessagesState
 
 
+# Custom reducer for report fields to handle concurrent writes from parallel analysts
+def merge_reports(existing: str, new: str) -> str:
+    """
+    Merge report updates, preferring non-empty values.
+    This allows multiple analysts to write to their respective reports concurrently.
+    """
+    if new:
+        return new
+    return existing if existing else ""
+
+
 # Researcher team state
 class InvestDebateState(TypedDict):
     bull_history: Annotated[
@@ -53,13 +64,11 @@ class AgentState(MessagesState):
 
     sender: Annotated[str, "Agent that sent this message"]
 
-    # research step
-    market_report: Annotated[str, "Report from the Market Analyst"]
-    sentiment_report: Annotated[str, "Report from the Social Media Analyst"]
-    news_report: Annotated[
-        str, "Report from the News Researcher of current world affairs"
-    ]
-    fundamentals_report: Annotated[str, "Report from the Fundamentals Researcher"]
+    # research step - using merge_reports reducer to support parallel analyst execution
+    market_report: Annotated[str, merge_reports]
+    sentiment_report: Annotated[str, merge_reports]
+    news_report: Annotated[str, merge_reports]
+    fundamentals_report: Annotated[str, merge_reports]
 
     # researcher team discussion step
     investment_debate_state: Annotated[
