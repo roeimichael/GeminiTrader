@@ -22,17 +22,18 @@ from tradingagents.agents.utils.news_data_tools import (
 
 def create_msg_delete():
     def delete_messages(state):
-        """Clear messages and add placeholder for Anthropic compatibility"""
-        messages = state["messages"]
-        
-        # Remove all messages
-        removal_operations = [RemoveMessage(id=m.id) for m in messages]
-        
-        # Add a minimal placeholder message
+        """
+        Clear messages safely for parallel analyst execution.
+
+        Instead of deleting individual messages (which can fail in parallel execution
+        when message IDs change), we simply reset to a minimal placeholder message.
+        """
+        # For parallel execution, simply replace all messages with a placeholder
+        # This avoids ID conflicts when multiple analysts clear concurrently
         placeholder = HumanMessage(content="Continue")
-        
-        return {"messages": removal_operations + [placeholder]}
-    
+
+        return {"messages": [placeholder]}
+
     return delete_messages
 
 
