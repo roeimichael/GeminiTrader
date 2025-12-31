@@ -3,6 +3,7 @@ Fail-fast validation for ticker data
 """
 
 from typing import Optional
+from datetime import datetime, timedelta
 from .interface import route_to_vendor
 from tradingagents.logger_config import get_logger
 
@@ -49,7 +50,12 @@ def validate_ticker_data(ticker: str, date: Optional[str] = None) -> dict:
 
     try:
         logger.info(f"Checking if ticker '{ticker}' has accessible data...")
-        stock_data = route_to_vendor("get_stock_data", ticker, period="1mo")
+
+        # Calculate date range for validation (last 7 days for quick check)
+        end_date = datetime.now().strftime("%Y-%m-%d")
+        start_date = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+
+        stock_data = route_to_vendor("get_stock_data", ticker, start_date, end_date)
 
         if stock_data is None:
             raise TickerValidationError(f"Ticker '{ticker}' returned None - likely invalid or delisted")
