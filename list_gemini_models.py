@@ -3,10 +3,6 @@ Quick script to list all available Gemini models and their capabilities.
 Run this to see what models are available in your Google AI account.
 """
 import os
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
 
 try:
     import google.generativeai as genai
