@@ -164,12 +164,21 @@ class ConversationManager:
         """Format the TradingAgentsGraph final state into conversation format"""
         individual_responses = []
 
+        # Helper function to ensure response is a string
+        def ensure_string(value):
+            if isinstance(value, list):
+                return " ".join(str(item) for item in value)
+            elif isinstance(value, str):
+                return value
+            else:
+                return str(value) if value else ""
+
         if final_state.get("market_report"):
             individual_responses.append({
                 "agent": "Market Analyst",
                 "category": "analysts",
                 "perspective": "Technical analysis and market indicators",
-                "response": final_state["market_report"]
+                "response": ensure_string(final_state["market_report"])
             })
 
         if final_state.get("fundamentals_report"):
@@ -177,7 +186,7 @@ class ConversationManager:
                 "agent": "Fundamentals Analyst",
                 "category": "analysts",
                 "perspective": "Financial statements and company fundamentals",
-                "response": final_state["fundamentals_report"]
+                "response": ensure_string(final_state["fundamentals_report"])
             })
 
         if final_state.get("news_report"):
@@ -185,7 +194,7 @@ class ConversationManager:
                 "agent": "News Analyst",
                 "category": "analysts",
                 "perspective": "News and current events analysis",
-                "response": final_state["news_report"]
+                "response": ensure_string(final_state["news_report"])
             })
 
         if final_state.get("sentiment_report"):
@@ -193,7 +202,7 @@ class ConversationManager:
                 "agent": "Social Media Analyst",
                 "category": "analysts",
                 "perspective": "Social sentiment and public perception",
-                "response": final_state["sentiment_report"]
+                "response": ensure_string(final_state["sentiment_report"])
             })
 
         debate_rounds = []
@@ -278,7 +287,17 @@ class ConversationManager:
         neutral_count = 0
 
         for resp in individual_responses:
-            response_text = resp["response"].upper()
+            # Handle case where response might be a list (from merge operations)
+            response = resp["response"]
+            if isinstance(response, list):
+                # Join list items into a single string
+                response_text = " ".join(str(item) for item in response).upper()
+            elif isinstance(response, str):
+                response_text = response.upper()
+            else:
+                # Fallback for other types
+                response_text = str(response).upper()
+
             if any(word in response_text for word in ["BUY", "BULLISH", "POSITIVE", "STRONG BUY", "UPSIDE"]):
                 bullish_count += 1
             elif any(word in response_text for word in ["SELL", "BEARISH", "NEGATIVE", "AVOID", "DOWNSIDE"]):
