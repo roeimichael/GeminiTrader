@@ -18,7 +18,10 @@ def get_news(
     Returns:
         str: A formatted string containing news data
     """
-    return route_to_vendor("get_news", ticker, start_date, end_date)
+    try:
+        return route_to_vendor("get_news", ticker, start_date, end_date)
+    except RuntimeError:
+        return f"News data for {ticker} is currently unavailable."
 
 @tool
 def get_global_news(
@@ -36,7 +39,15 @@ def get_global_news(
     Returns:
         str: A formatted string containing global news data
     """
-    return route_to_vendor("get_global_news", curr_date, look_back_days, limit)
+    try:
+        return route_to_vendor("get_global_news", curr_date, look_back_days, limit)
+    except RuntimeError:
+        # Return informative message instead of crashing when news data unavailable
+        return (
+            "Global news data is currently unavailable. "
+            "This may be due to missing local data files or API configuration. "
+            "Please proceed with the analysis using other available data sources."
+        )
 
 @tool
 def get_insider_sentiment(
@@ -52,7 +63,10 @@ def get_insider_sentiment(
     Returns:
         str: A report of insider sentiment data
     """
-    return route_to_vendor("get_insider_sentiment", ticker, curr_date)
+    try:
+        return route_to_vendor("get_insider_sentiment", ticker, curr_date)
+    except RuntimeError:
+        return f"Insider sentiment data for {ticker} is currently unavailable."
 
 @tool
 def get_insider_transactions(
@@ -68,4 +82,7 @@ def get_insider_transactions(
     Returns:
         str: A report of insider transaction data
     """
-    return route_to_vendor("get_insider_transactions", ticker, curr_date)
+    try:
+        return route_to_vendor("get_insider_transactions", ticker, curr_date)
+    except RuntimeError:
+        return f"Insider transaction data for {ticker} is currently unavailable."

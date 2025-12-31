@@ -5,18 +5,34 @@ from openai import OpenAI
 
 class FinancialSituationMemory:
     def __init__(self, name, config):
-        if config["backend_url"] == "http://localhost:11434/v1":
+        # Check if backend_url is configured (required for OpenAI embeddings)
+        backend_url = config.get("backend_url", "")
+
+        if not backend_url:
+            # Memory disabled when no backend_url (e.g., using Google Gemini)
+            self.enabled = False
+            self.chroma_client = chromadb.Client(Settings(allow_reset=True))
+            self.situation_collection = self.chroma_client.get_or_create_collection(name=name)
+            return
+
+        self.enabled = True
+
+        if backend_url == "http://localhost:11434/v1":
             self.embedding = "nomic-embed-text"
         else:
             self.embedding = "text-embedding-3-small"
-        self.client = OpenAI(base_url=config["backend_url"])
+
+        self.client = OpenAI(base_url=backend_url)
         self.chroma_client = chromadb.Client(Settings(allow_reset=True))
         # Use get_or_create_collection to handle existing collections
         self.situation_collection = self.chroma_client.get_or_create_collection(name=name)
 
     def get_embedding(self, text):
         """Get OpenAI embedding for a text"""
-        
+        if not self.enabled:
+            # Return dummy embedding when memory is disabled
+            return [0.0] * 1536  # Standard OpenAI embedding dimension
+
         response = self.client.embeddings.create(
             model=self.embedding, input=text
         )
@@ -47,6 +63,10 @@ class FinancialSituationMemory:
 
     def get_memories(self, current_situation, n_matches=1):
         """Find matching recommendations using OpenAI embeddings"""
+        if not self.enabled:
+            # Return empty results when memory is disabled
+            return []
+
         query_embedding = self.get_embedding(current_situation)
 
         results = self.situation_collection.query(
