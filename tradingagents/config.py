@@ -11,19 +11,22 @@ DEFAULT_CONFIG = {
     # LLM settings
     "llm_provider": "google",
     # Model fallback lists - tries models in order until one works
-    "deep_think_llm_candidates": [
-        "gemini-1.5-pro-latest",  # Primary: Latest with -latest suffix
-        "gemini-1.5-pro",         # Secondary: Generic 1.5 alias
-        "gemini-pro",             # Fallback: Original stable model
-    ],
+    # Analyst Agents (High Speed, Low Cost)
     "quick_think_llm_candidates": [
-        "gemini-1.5-flash-latest", # Primary: Latest with -latest suffix
-        "gemini-1.5-flash",        # Secondary: Generic 1.5 alias
-        "gemini-pro",              # Fallback: Original stable model (slower but reliable)
+        "gemini-2.5-flash",          # ✅ Primary: Newest standard Flash
+        "gemini-2.0-flash-001",      # ✅ Secondary: Stable previous gen (reliable)
+        "gemini-flash-latest",       # ⚠️ Fallback: Generic alias
+        "gemini-2.0-flash-lite",     # ⚡ Ultra-fast backup (good for simple signals)
+    ],
+    # Planner/Manager Agents (Deep Reasoning)
+    "deep_think_llm_candidates": [
+        "gemini-2.5-pro",            # ✅ Primary: Newest standard Pro
+        "gemini-pro-latest",         # ✅ Secondary: Generic stable alias
+        "gemini-2.0-flash-exp",      # ⚠️ Fallback: Smart but low rate limit (ok for planner)
     ],
     # Legacy single-model config (deprecated, use _candidates lists above)
-    "deep_think_llm": "gemini-1.5-pro",
-    "quick_think_llm": "gemini-1.5-flash",
+    "deep_think_llm": "gemini-2.5-pro",
+    "quick_think_llm": "gemini-2.5-flash",
     "backend_url": "",  # Not needed for Google Gemini
     # Debate and discussion settings
     "max_debate_rounds": 1,
