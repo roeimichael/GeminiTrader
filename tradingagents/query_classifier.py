@@ -3,8 +3,8 @@ Query Classifier for Intelligent Agent Selection
 """
 
 from typing import List, Dict
-from langchain_google_genai import ChatGoogleGenerativeAI
 from tradingagents.config import DEFAULT_CONFIG
+from tradingagents.llm_utils import get_quick_thinking_llm
 from tradingagents.logger_config import get_logger
 
 logger = get_logger(__name__)
@@ -16,10 +16,8 @@ class QueryClassifier:
     def __init__(self, config: Dict = None):
         self.config = config or DEFAULT_CONFIG
 
-        self.llm = ChatGoogleGenerativeAI(
-            model=self.config.get("quick_think_llm", "gemini-1.5-flash"),
-            temperature=0.0
-        )
+        # Use safe factory function with model fallback
+        self.llm = get_quick_thinking_llm(self.config, temperature=0.0)
 
         self.agent_capabilities = {
             "market": {

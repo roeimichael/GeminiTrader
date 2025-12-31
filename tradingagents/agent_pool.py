@@ -1,6 +1,5 @@
 import os
 from typing import Dict, List
-from langchain_google_genai import ChatGoogleGenerativeAI
 
 from tradingagents.agents.analysts.market_analyst import create_market_analyst
 from tradingagents.agents.analysts.fundamentals_analyst import create_fundamentals_analyst
@@ -15,6 +14,8 @@ from tradingagents.agents.risk_mgmt.conservative_debator import create_safe_deba
 from tradingagents.agents.risk_mgmt.neutral_debator import create_neutral_debator
 from tradingagents.agents.trader.trader import create_trader
 from tradingagents.agents.utils.memory import FinancialSituationMemory
+from tradingagents.llm_utils import get_quick_thinking_llm, get_deep_thinking_llm
+from tradingagents.config import DEFAULT_CONFIG
 
 class AgentRegistry:
     """Registry of all available TradingAgents"""
@@ -140,20 +141,13 @@ class AgentPool:
         self._initialize_llms()
 
     def _initialize_llms(self):
-        """Initialize Gemini LLM instances"""
-        api_key = os.getenv("GOOGLE_API_KEY")
-        if not api_key:
-            raise ValueError("GOOGLE_API_KEY not found in environment")
+        """Initialize Gemini LLM instances with automatic fallback"""
+        # Merge user config with defaults
+        config = {**DEFAULT_CONFIG, **self.config}
 
-        self.llm_quick = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
-            google_api_key=api_key
-        )
-
-        self.llm_deep = ChatGoogleGenerativeAI(
-            model="gemini-1.5-pro",
-            google_api_key=api_key
-        )
+        # Use safe factory functions with model fallback
+        self.llm_quick = get_quick_thinking_llm(config)
+        self.llm_deep = get_deep_thinking_llm(config)
 
     def _get_or_create_memory(self, memory_name: str):
         """Get or create a memory instance"""

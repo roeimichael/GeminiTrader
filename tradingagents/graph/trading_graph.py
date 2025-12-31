@@ -12,6 +12,7 @@ from langgraph.prebuilt import ToolNode
 
 from tradingagents.agents import *
 from tradingagents.config import DEFAULT_CONFIG
+from tradingagents.llm_utils import get_quick_thinking_llm, get_deep_thinking_llm
 from tradingagents.agents.utils.memory import FinancialSituationMemory
 from tradingagents.agents.utils.agent_states import (
     AgentState,
@@ -73,8 +74,9 @@ class TradingAgentsGraph:
             self.deep_thinking_llm = ChatAnthropic(model=self.config["deep_think_llm"], base_url=self.config["backend_url"])
             self.quick_thinking_llm = ChatAnthropic(model=self.config["quick_think_llm"], base_url=self.config["backend_url"])
         elif self.config["llm_provider"].lower() == "google":
-            self.deep_thinking_llm = ChatGoogleGenerativeAI(model=self.config["deep_think_llm"])
-            self.quick_thinking_llm = ChatGoogleGenerativeAI(model=self.config["quick_think_llm"])
+            # Use safe factory functions with automatic model fallback
+            self.deep_thinking_llm = get_deep_thinking_llm(self.config)
+            self.quick_thinking_llm = get_quick_thinking_llm(self.config)
         else:
             raise ValueError(f"Unsupported LLM provider: {self.config['llm_provider']}")
         

@@ -10,6 +10,18 @@ DEFAULT_CONFIG = {
     ),
     # LLM settings
     "llm_provider": "google",
+    # Model fallback lists - tries models in order until one works
+    "deep_think_llm_candidates": [
+        "gemini-1.5-pro-002",   # Primary: Latest stable Pro version
+        "gemini-1.5-pro-001",   # Secondary: Previous stable Pro version
+        "gemini-1.5-pro",       # Fallback: Generic alias
+    ],
+    "quick_think_llm_candidates": [
+        "gemini-1.5-flash-002", # Primary: Latest, fastest, smartest
+        "gemini-1.5-flash-001", # Secondary: Previous stable version
+        "gemini-1.5-flash",     # Fallback: Generic alias
+    ],
+    # Legacy single-model config (deprecated, use _candidates lists above)
     "deep_think_llm": "gemini-1.5-pro",
     "quick_think_llm": "gemini-1.5-flash",
     "backend_url": "",  # Not needed for Google Gemini
