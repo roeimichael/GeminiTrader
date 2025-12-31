@@ -17,7 +17,7 @@ class QueryClassifier:
         self.config = config or DEFAULT_CONFIG
 
         self.llm = ChatGoogleGenerativeAI(
-            model=self.config.get("quick_think_llm", "gemini-2.0-flash-exp"),
+            model=self.config.get("quick_think_llm", "gemini-1.5-flash"),
             temperature=0.0
         )
 

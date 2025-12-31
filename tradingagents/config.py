@@ -11,7 +11,7 @@ DEFAULT_CONFIG = {
     # LLM settings
     "llm_provider": "google",
     "deep_think_llm": "gemini-1.5-pro",
-    "quick_think_llm": "gemini-2.0-flash-exp",
+    "quick_think_llm": "gemini-1.5-flash",
     "backend_url": "",  # Not needed for Google Gemini
     # Debate and discussion settings
     "max_debate_rounds": 1,
