@@ -42,8 +42,9 @@ DEFAULT_CONFIG = {
     },
     # Tool-level configuration (takes precedence over category-level)
     "tool_vendors": {
-        # Override specific news methods that don't have yfinance implementation
-        "get_global_news": "local",           # Only openai/local available, local doesn't need API key
+        # Override specific news methods to use Gemini for news generation
+        "get_global_news": "google_gemini",   # Use Gemini with Google Search grounding
+        "get_news": "google_gemini",          # Use Gemini for company-specific news
         "get_insider_sentiment": "local",     # Only local available
         # Example: "get_stock_data": "alpha_vantage",  # Override category default
     },

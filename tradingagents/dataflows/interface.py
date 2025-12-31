@@ -7,6 +7,7 @@ logger = get_logger(__name__)
 from .local import get_YFin_data, get_finnhub_news, get_finnhub_company_insider_sentiment, get_finnhub_company_insider_transactions, get_simfin_balance_sheet, get_simfin_cashflow, get_simfin_income_statements, get_reddit_global_news, get_reddit_company_news
 from .y_finance import get_YFin_data_online, get_stock_stats_indicators_window, get_balance_sheet as get_yfinance_balance_sheet, get_cashflow as get_yfinance_cashflow, get_income_statement as get_yfinance_income_statement, get_insider_transactions as get_yfinance_insider_transactions
 from .google import get_google_news
+from .google_gemini import get_global_news_gemini, get_news_gemini
 from .openai import get_stock_news_openai, get_global_news_openai, get_fundamentals_openai
 from .alpha_vantage import (
     get_stock as get_alpha_vantage_stock,
@@ -106,9 +107,11 @@ VENDOR_METHODS = {
         "alpha_vantage": get_alpha_vantage_news,
         "openai": get_stock_news_openai,
         "google": get_google_news,
+        "google_gemini": get_news_gemini,
         "local": [get_finnhub_news, get_reddit_company_news, get_google_news],
     },
     "get_global_news": {
+        "google_gemini": get_global_news_gemini,
         "openai": get_global_news_openai,
         "local": get_reddit_global_news
     },
