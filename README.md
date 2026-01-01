@@ -129,13 +129,13 @@ export ALPHA_VANTAGE_API_KEY="your-alpha-vantage-key"  # Optional
 export OPENAI_API_KEY="your-openai-key"  # Optional
 
 # Run the server
-uvicorn app:app --reload --host localhost --port 8000
+uvicorn app:app --reload --host localhost --port 8082
 ```
 
 The API will be available at:
-- API: `http://localhost:8000`
-- Interactive Docs: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+- API: `http://localhost:8082`
+- Interactive Docs: `http://localhost:8082/docs`
+- ReDoc: `http://localhost:8082/redoc`
 
 ## API Reference
 
@@ -615,18 +615,18 @@ POST /api/debug/enable
 uvicorn app:app --reload
 
 # Test health endpoint
-curl http://localhost:8000/api/health
+curl http://localhost:8082/api/health
 
 # Get available agents
-curl http://localhost:8000/api/agents
+curl http://localhost:8082/api/agents
 
 # Initialize pool
-curl -X POST http://localhost:8000/api/initialize-pool \
+curl -X POST http://localhost:8082/api/initialize-pool \
   -H "Content-Type: application/json" \
   -d '{"selected_agents": ["market_analyst", "fundamentals_analyst"]}'
 
 # Run analysis
-curl -X POST http://localhost:8000/api/query \
+curl -X POST http://localhost:8082/api/query \
   -H "Content-Type: application/json" \
   -d '{
     "query": "Should I invest in this stock?",

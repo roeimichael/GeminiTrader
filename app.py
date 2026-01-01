@@ -1,8 +1,8 @@
 """
 GeminiTrader FastAPI Backend
 
-Run with: uvicorn app:app --reload --host localhost --port 8000
-API Documentation: http://localhost:8000/docs
+Run with: uvicorn app:app --reload --host localhost --port 8082
+API Documentation: http://localhost:8082/docs
 """
 
 # Load environment variables from .env file FIRST (before other imports)
@@ -40,8 +40,8 @@ async def lifespan(app: FastAPI):
     logger.info("GeminiTrader API Starting Up")
     logger.info("="*60)
     logger.info("FastAPI server initialized")
-    logger.info("API Documentation: http://localhost:8000/docs")
-    logger.info("Health Check: http://localhost:8000/api/health")
+    logger.info("API Documentation: http://localhost:8082/docs")
+    logger.info("Health Check: http://localhost:8082/api/health")
     logger.info("="*60)
 
     yield  # Application runs here
