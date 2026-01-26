@@ -1,716 +1,383 @@
 # GeminiTrader
 
-A sophisticated multi-agent stock analysis system built with FastAPI, LangGraph, and Google Gemini. GeminiTrader uses specialized AI agents to analyze stocks from multiple perspectives (technical, fundamental, news, sentiment) and provides comprehensive investment recommendations through structured debates and risk assessment.
+**A multi-agent AI stock analysis system that debates, reasons, and recommends trades — powered by Google Gemini.**
 
-## Table of Contents
+GeminiTrader isn't a single chatbot answering stock questions. It's an ensemble of specialized AI agents — analysts, researchers, debaters, traders, and risk managers — that collaborate through structured workflows to produce investment recommendations. Think of it as a virtual trading desk where every seat is filled by a purpose-built AI agent.
 
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Installation](#installation)
-- [API Reference](#api-reference)
-- [System Flow](#system-flow)
-- [Agent System](#agent-system)
-- [Configuration](#configuration)
-- [Development](#development)
+---
 
-## Overview
+## What This Project Is
 
-GeminiTrader is a backend API that orchestrates multiple AI agents to perform comprehensive stock analysis. The system features:
+At its core, GeminiTrader takes a user's question about a stock (e.g., *"Should I invest in AAPL?"*) and runs it through a multi-phase analysis pipeline:
 
-- **Multi-Agent Analysis**: Specialized agents for market analysis, fundamentals, news, and social sentiment
-- **Intelligent Query Classification**: Automatically selects relevant agents based on user queries
-- **Debate-Based Decision Making**: Bull/bear debates and risk assessment through structured discussions
-- **Modular Data Sources**: Pluggable vendor system supporting yfinance, Alpha Vantage, OpenAI, and Google
-- **Production-Ready API**: FastAPI backend with session management and comprehensive logging
-- **Advanced Caching**: Disk-based caching to optimize API usage and reduce costs
+1. **Analysts** gather data — technical indicators, financial statements, news, social sentiment
+2. **Researchers** debate — a bull makes the case for buying, a bear argues against it
+3. **A manager judges** the debate and makes an initial investment decision
+4. **A trader** turns that decision into a concrete execution plan (entry price, stop-loss, targets)
+5. **Risk analysts** debate the risk profile — aggressive vs. conservative vs. balanced
+6. **A risk manager** delivers the final verdict: **BUY**, **SELL**, or **HOLD**
 
-## Architecture
+The result is a structured, multi-perspective analysis rather than a single LLM's opinion.
 
-### High-Level Architecture
+---
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        Frontend / Client                     │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     FastAPI Backend (app.py)                 │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │  API Endpoints                                        │  │
-│  │  - /api/agents       - /api/initialize-pool          │  │
-│  │  - /api/query        - /api/history                  │  │
-│  │  - /api/sessions     - /api/health                   │  │
-│  └───────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   Conversation Manager                       │
-│  ┌─────────────────┐  ┌──────────────────────────────────┐ │
-│  │ Query Classifier│  │   TradingAgentsGraph (LangGraph)│ │
-│  │  - Keyword Match│  │   - Analyst Agents (Phase 1)    │ │
-│  │  - LLM Analysis │  │   - Investment Debate (Phase 2) │ │
-│  │  - Agent Select │  │   - Trader Planning (Phase 3)   │ │
-│  └─────────────────┘  │   - Risk Debate (Phase 4)       │ │
-│                        │   - Final Decision (Phase 5)    │ │
-│                        └──────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    Data Flow Layer                           │
-│  ┌─────────────┐  ┌──────────────┐  ┌──────────────────┐  │
-│  │  Interface  │  │    Cache     │  │   Validation     │  │
-│  │  - Routing  │  │  - Disk TTL  │  │  - Ticker Check  │  │
-│  │  - Fallback │  │  - 24h Cache │  │  - Fail Fast     │  │
-│  └─────────────┘  └──────────────┘  └──────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     Data Vendors                             │
-│  ┌──────────┐ ┌───────────────┐ ┌────────┐ ┌────────────┐ │
-│  │ yfinance │ │ Alpha Vantage │ │ OpenAI │ │   Google   │ │
-│  └──────────┘ └───────────────┘ └────────┘ └────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-```
+## What's Included So Far
 
-### Backend Components
+### Multi-Agent System (12 Specialized Agents)
 
-#### Core Modules
+| Phase | Agents | Role |
+|-------|--------|------|
+| **Analysis** | Market Analyst, Fundamentals Analyst, News Analyst, Social Media Analyst | Gather and interpret data from different domains |
+| **Investment Debate** | Bull Researcher, Bear Researcher | Build opposing cases based on analyst reports |
+| **Decision** | Research Manager | Judge the debate, produce an investment thesis |
+| **Execution** | Trader | Create actionable trade plan with specific prices and sizing |
+| **Risk Debate** | Aggressive, Conservative, Neutral Risk Analysts | Debate risk management approach |
+| **Final Verdict** | Risk Manager | Final recommendation with risk-adjusted parameters |
 
-- **app.py**: FastAPI application with REST API endpoints
-- **agent_pool.py**: Agent registry and pool management
-- **conversation_manager.py**: Orchestrates multi-agent conversations
-- **query_classifier.py**: Intelligent query routing to relevant agents
-- **trading_graph.py**: LangGraph workflow for multi-agent analysis
+### Intelligent Query Routing
 
-#### Data Layer
+Not every question needs all 12 agents. The system includes a two-stage query classifier:
+- **Fast path**: keyword matching routes simple queries to relevant agents instantly
+- **Complex path**: Gemini LLM analyzes the query and selects only the agents that are needed
 
-- **dataflows/interface.py**: Vendor routing with fallback support
-- **dataflows/cache.py**: Disk-based caching system (24h TTL)
-- **dataflows/validation.py**: Fail-fast ticker validation
-- **dataflows/vendors/**: Implementation for each data provider
+This means asking *"What's AAPL's P/E ratio?"* won't spin up the news analyst or social sentiment agent.
 
-#### Agent System
+### Pluggable Data Vendor System
 
-- **agents/analysts/**: Market, fundamentals, news, social media analysts
-- **agents/researchers/**: Bull and bear researchers for debates
-- **agents/managers/**: Research and risk managers (judges)
-- **agents/trader/**: Trade execution planner
-- **agents/risk_mgmt/**: Aggressive, conservative, neutral risk analysts
+The data layer abstracts away the source of financial data. You can swap providers without changing agent code:
 
-## Installation
+| Data Category | Available Vendors |
+|---------------|-------------------|
+| Stock Prices & History | yfinance, Alpha Vantage, local fallback |
+| Technical Indicators | yfinance, Alpha Vantage, local fallback |
+| Fundamental Data | Alpha Vantage, OpenAI, local fallback |
+| News & Events | yfinance, Google Gemini (with Search grounding), Alpha Vantage, local fallback |
 
-### Prerequisites
+Vendors are configured at the category level with optional per-tool overrides. If a primary vendor fails, the system automatically falls back to alternatives.
 
-- Python 3.9+
-- Google API Key (for Gemini)
-- Optional: Alpha Vantage API Key, OpenAI API Key
+### Caching Layer
 
-### Setup
+A disk-based cache with 24-hour TTL sits between agents and data vendors. This:
+- Prevents redundant API calls during multi-agent runs
+- Reduces costs during development and testing
+- Handles rate limits gracefully by serving cached data
 
-```bash
-# Clone the repository
-git clone <repository-url>
-cd GeminiTrader
+### Agent Memory
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+Key agents (researchers, managers, trader) maintain memory across sessions:
+- They reference previous analyses to avoid repeating mistakes
+- Past trade outcomes inform future recommendations
+- Memory is implemented via `FinancialSituationMemory` with reflection capabilities
 
-# Install dependencies
-pip install -r requirements.txt
+### Production REST API
 
-# Set up environment variables
-export GOOGLE_API_KEY="your-google-api-key"
-export ALPHA_VANTAGE_API_KEY="your-alpha-vantage-key"  # Optional
-export OPENAI_API_KEY="your-openai-key"  # Optional
+A FastAPI backend exposes the full system over HTTP:
+- **`POST /api/query`** — Run full multi-agent analysis
+- **`POST /api/initialize-pool`** — Set up agents for a session
+- **`GET /api/agents`** — List available agents and capabilities
+- **`GET /api/health`** — Health check with active session count
+- **`GET /api/history`** — Retrieve past analyses
+- Session management, debug mode, structured error responses
 
-# Run the server
-uvicorn app:app --reload --host localhost --port 8082
-```
+### LLM Resilience
 
-The API will be available at:
-- API: `http://localhost:8082`
-- Interactive Docs: `http://localhost:8082/docs`
-- ReDoc: `http://localhost:8082/redoc`
+The system doesn't depend on a single model being available:
+- Model candidate lists with automatic fallback (e.g., `gemini-2.5-pro` → `gemini-pro-latest` → `gemini-2.0-flash-exp`)
+- Separate model tiers: "deep think" models for complex reasoning, "quick think" models for fast analysis
+- Graceful error handling when models are rate-limited or unavailable
 
-## API Reference
+---
 
-### General Endpoints
+## How It's Currently Implemented
 
-#### `GET /`
-Root endpoint providing API information and available endpoints.
+### Tech Stack
 
-**Response:**
-```json
-{
-  "name": "GeminiTrader API",
-  "version": "1.0.0",
-  "description": "Multi-Agent Stock Analysis System",
-  "documentation": "/docs",
-  "health": "/api/health",
-  "endpoints": {
-    "agents": "/api/agents",
-    "initialize": "/api/initialize-pool",
-    "query": "/api/query",
-    "history": "/api/history"
-  }
-}
-```
+| Layer | Technology |
+|-------|-----------|
+| **Backend Framework** | FastAPI (Python) |
+| **Agent Orchestration** | LangGraph (state machine-based workflow) |
+| **LLM Abstraction** | LangChain |
+| **Primary LLM** | Google Gemini (2.5-pro for deep analysis, 2.5-flash for quick tasks) |
+| **Financial Data** | yfinance, Alpha Vantage, Finnhub |
+| **News Grounding** | Google Gemini with Google Search integration |
+| **Social Sentiment** | Reddit (PRAW), RSS feeds (FeedParser) |
+| **Caching** | Custom disk-based JSON cache |
+| **Technical Indicators** | stockstats library |
+| **Data Processing** | Pandas |
 
-#### `GET /api/health`
-Health check endpoint.
-
-**Response:**
-```json
-{
-  "status": "healthy",
-  "version": "1.0.0",
-  "timestamp": "2024-01-15T10:30:00",
-  "active_sessions": 2
-}
-```
-
-### Agent Management
-
-#### `GET /api/agents`
-Get all available agents with their descriptions and capabilities.
-
-**Response:**
-```json
-{
-  "analysts": {
-    "market": {
-      "name": "Market Analyst",
-      "description": "Technical indicators and market trends expert",
-      "requires_memory": false
-    },
-    "fundamentals": {...},
-    "news": {...},
-    "social": {...}
-  },
-  "researchers": {...},
-  "managers": {...},
-  "risk_analysts": {...},
-  "trader": {...}
-}
-```
-
-#### `POST /api/initialize-pool`
-Initialize an agent pool for a session.
-
-**Request:**
-```json
-{
-  "selected_agents": ["market_analyst", "fundamentals_analyst", "news_analyst"],
-  "session_id": "optional-session-id"
-}
-```
-
-**Response:**
-```json
-{
-  "status": "success",
-  "message": "Successfully initialized 3 agents",
-  "agent_count": 3,
-  "session_id": "default",
-  "agents": ["market_analyst", "fundamentals_analyst", "news_analyst"]
-}
-```
-
-### Analysis Endpoints
-
-#### `POST /api/query`
-Execute multi-agent stock analysis workflow.
-
-**Request:**
-```json
-{
-  "query": "What are your thoughts about investing in this stock?",
-  "ticker": "AAPL",
-  "date": "2024-01-15",
-  "session_id": "default"
-}
-```
-
-**Response:**
-```json
-{
-  "status": "success",
-  "timestamp": "2024-01-15T10:30:00",
-  "query": "What are your thoughts...",
-  "ticker": "AAPL",
-  "individual_responses": [
-    {
-      "agent": "Market Analyst",
-      "category": "analysts",
-      "perspective": "Technical analysis and market indicators",
-      "response": "Detailed analysis..."
-    }
-  ],
-  "debate": [
-    {
-      "round": 1,
-      "topic": "Investment Opportunity Debate (Bull vs Bear)",
-      "exchanges": [...]
-    },
-    {
-      "round": 2,
-      "topic": "Trade Execution Plan",
-      "exchanges": [...]
-    },
-    {
-      "round": 3,
-      "topic": "Risk Assessment Debate",
-      "exchanges": [...]
-    }
-  ],
-  "final_verdict": {
-    "timestamp": "2024-01-15 10:30:00",
-    "ticker": "AAPL",
-    "trade_date": "2024-01-15",
-    "overall_recommendation": "BUY",
-    "confidence_level": "High",
-    "sentiment_breakdown": {
-      "bullish": 3,
-      "bearish": 0,
-      "neutral": 1,
-      "bullish_percentage": 75.0
-    },
-    "final_trade_decision": "Full decision text...",
-    "investment_plan": "Detailed plan...",
-    "summary": "Analysis summary..."
-  },
-  "query_classification": {
-    "selected_agents": ["market", "fundamentals", "news"],
-    "reasoning": "Query requires comprehensive analysis",
-    "complexity": "complex",
-    "estimated_cost": "high",
-    "method": "llm_classification"
-  }
-}
-```
-
-### History & Session Management
-
-#### `GET /api/history?session_id=default&limit=10`
-Get conversation history for a session.
-
-**Response:**
-```json
-[
-  {
-    "status": "success",
-    "timestamp": "2024-01-15T10:30:00",
-    "query": "...",
-    "ticker": "AAPL",
-    "individual_responses": [...],
-    "debate": [...],
-    "final_verdict": {...}
-  }
-]
-```
-
-#### `DELETE /api/history?session_id=default`
-Clear conversation history for a session.
-
-#### `GET /api/sessions`
-List all active sessions.
-
-**Response:**
-```json
-{
-  "total": 2,
-  "sessions": {
-    "default": {
-      "created_at": "2024-01-15T10:00:00",
-      "agent_count": 4,
-      "agents": ["market_analyst", "fundamentals_analyst", "news_analyst", "social_analyst"]
-    }
-  }
-}
-```
-
-#### `DELETE /api/session/{session_id}`
-Delete a session and clean up resources.
-
-### Debug Endpoints
-
-#### `POST /api/debug/enable`
-Enable debug logging for detailed diagnostics.
-
-#### `POST /api/debug/disable`
-Disable debug logging (production mode).
-
-## System Flow
-
-### Complete Analysis Flow
+### Architecture Overview
 
 ```
-1. CLIENT REQUEST
-   ↓
-2. API ENDPOINT (/api/query)
-   ↓
-3. CONVERSATION MANAGER
-   ↓
-4. QUERY CLASSIFIER
-   │
-   ├─→ Keyword Matching (fast path)
-   │   └─→ Select agents based on keywords
-   │
-   └─→ LLM Classification (complex queries)
-       └─→ Gemini analyzes query and selects relevant agents
-   ↓
-5. TICKER VALIDATION
-   │
-   ├─→ Check ticker format
-   ├─→ Validate data accessibility
-   └─→ Fail-fast if invalid
-   ↓
-6. TRADING AGENTS GRAPH (LangGraph)
-   │
-   ├─→ PHASE 1: Parallel Analyst Execution
-   │   ├─→ Market Analyst (if selected)
-   │   ├─→ Fundamentals Analyst (if selected)
-   │   ├─→ News Analyst (if selected)
-   │   └─→ Social Media Analyst (if selected)
-   │
-   ├─→ PHASE 2: Investment Debate
-   │   ├─→ Bull Researcher (builds bullish case)
-   │   ├─→ Bear Researcher (builds bearish case)
-   │   └─→ Research Manager (judges debate, makes decision)
-   │
-   ├─→ PHASE 3: Trade Planning
-   │   └─→ Trader (creates executable trade plan)
-   │
-   ├─→ PHASE 4: Risk Assessment Debate
-   │   ├─→ Aggressive Risk Analyst
-   │   ├─→ Conservative Risk Analyst
-   │   ├─→ Neutral Risk Analyst
-   │   └─→ Risk Manager (judges, final recommendation)
-   │
-   └─→ PHASE 5: Final Decision & Formatting
-   ↓
-7. RESULT FORMATTING
-   ↓
-8. RESPONSE TO CLIENT
+Client Request
+       |
+       v
+  FastAPI Backend (app.py)
+       |
+       v
+  Conversation Manager
+       |
+       +-- Query Classifier (keyword match or LLM-based)
+       |
+       v
+  Ticker Validation (fail-fast)
+       |
+       v
+  LangGraph Trading Workflow
+       |
+       +-- Phase 1: Analysts run in PARALLEL
+       |     Market | Fundamentals | News | Social
+       |
+       +-- Phase 2: Sequential Bull/Bear debate
+       |     Research Manager judges
+       |
+       +-- Phase 3: Trader builds execution plan
+       |
+       +-- Phase 4: Risk debate (Aggressive/Conservative/Neutral)
+       |     Risk Manager delivers final verdict
+       |
+       v
+  Structured JSON Response
 ```
 
-### Data Flow
+### Key Design Decisions
 
-```
-AGENT REQUESTS DATA
-   ↓
-DATAFLOW INTERFACE (route_to_vendor)
-   ↓
-CHECK CACHE (24h TTL)
-   │
-   ├─→ CACHE HIT: Return cached data
-   │
-   └─→ CACHE MISS
-       ↓
-   VENDOR ROUTING
-       │
-       ├─→ PRIMARY VENDOR (from config)
-       │   ├─→ SUCCESS: Cache & return
-       │   └─→ FAILURE: Try next vendor
-       │
-       └─→ FALLBACK VENDORS (automatic)
-           ├─→ Try each vendor in sequence
-           ├─→ Rate limit handling
-           └─→ Error recovery
-```
-
-## Agent System
-
-### Agent Categories
-
-#### 1. Analysts (Phase 1)
-Gather data and perform specialized analysis:
-
-- **Market Analyst**: Technical indicators, price trends, moving averages, RSI, MACD, Bollinger Bands
-- **Fundamentals Analyst**: Financial statements, P/E ratio, revenue, earnings, balance sheet analysis
-- **News Analyst**: Recent news, company announcements, events, insider transactions
-- **Social Media Analyst**: Sentiment analysis from social media, Reddit, public perception
-
-#### 2. Researchers (Phase 2)
-Build opposing investment cases:
-
-- **Bull Researcher**: Constructs bullish arguments based on analyst reports
-- **Bear Researcher**: Constructs bearish counter-arguments
-- **Research Manager**: Judges the debate and makes initial investment decision
-
-#### 3. Trader (Phase 3)
-Creates executable trade plans:
-
-- **Trader**: Develops detailed trade execution strategy based on research manager's decision
-
-#### 4. Risk Analysts (Phase 4)
-Debate risk management approach:
-
-- **Aggressive Risk Analyst**: Argues for high-risk, high-reward positioning
-- **Conservative Risk Analyst**: Argues for risk-averse approach
-- **Neutral Risk Analyst**: Provides balanced perspective
-- **Risk Manager**: Final judge, produces ultimate recommendation (BUY/SELL/HOLD)
-
-### Agent Memory System
-
-Agents with `requires_memory: true` maintain conversation memory to:
-- Learn from past decisions
-- Reference previous analyses
-- Improve recommendations over time
-- Avoid repeating mistakes
-
-Memory-enabled agents:
-- Bull Researcher
-- Bear Researcher
-- Research Manager
-- Risk Manager
-- Trader
-
-## Configuration
-
-### Environment Variables
-
-```bash
-# Required
-GOOGLE_API_KEY=your-google-api-key
-
-# Optional (for additional data sources)
-ALPHA_VANTAGE_API_KEY=your-alpha-vantage-key
-OPENAI_API_KEY=your-openai-key
-FINNHUB_API_KEY=your-finnhub-key
-```
-
-### Data Vendor Configuration
-
-Edit `tradingagents/config.py`:
-
-```python
-DEFAULT_CONFIG = {
-    "llm_provider": "google",
-    "deep_think_llm": "gemini-1.5-pro",      # For complex reasoning
-    "quick_think_llm": "gemini-2.0-flash-exp", # For fast analysis
-
-    # Category-level defaults
-    "data_vendors": {
-        "core_stock_apis": "yfinance",
-        "technical_indicators": "yfinance",
-        "fundamental_data": "alpha_vantage",
-        "news_data": "alpha_vantage",
-    },
-
-    # Tool-level overrides
-    "tool_vendors": {
-        # Example: "get_news": "openai"
-    },
-
-    # Debate settings
-    "max_debate_rounds": 1,
-    "max_risk_discuss_rounds": 1,
-}
-```
-
-### Available Vendors by Category
-
-| Category | Available Vendors |
-|----------|------------------|
-| Core Stock APIs | yfinance, alpha_vantage, local |
-| Technical Indicators | yfinance, alpha_vantage, local |
-| Fundamental Data | alpha_vantage, openai, local |
-| News Data | alpha_vantage, openai, google, local |
-
-### Caching Configuration
-
-The system uses disk-based caching with a 24-hour TTL to:
-- Reduce API costs
-- Improve response times
-- Avoid rate limits during development
-
-Cache location: `tradingagents/dataflows/data_cache/*.json`
-
-To clear cache:
-```python
-from tradingagents.dataflows.cache import get_cache
-get_cache().clear_all()
-```
-
-## Development
+- **Debate-driven decisions**: Rather than asking one LLM to make a call, the system forces explicit consideration of bull and bear cases. The manager sees both arguments before deciding.
+- **Parallel analysts, sequential debates**: Data gathering runs in parallel for speed. Debates run sequentially because each phase depends on the previous one.
+- **Fail-fast validation**: Ticker symbols are validated before any expensive LLM calls or API requests.
+- **Vendor abstraction**: Agents don't know where their data comes from. The data flow layer handles routing, fallback, and caching transparently.
+- **Configurable agent selection**: The query classifier prevents unnecessary work. A simple fundamentals question doesn't need sentiment analysis.
 
 ### Project Structure
 
 ```
 GeminiTrader/
-├── app.py                          # FastAPI application
-├── tradingagents/
-│   ├── agent_pool.py               # Agent registry & pool management
-│   ├── conversation_manager.py     # Conversation orchestration
-│   ├── query_classifier.py         # Query routing logic
-│   ├── config.py                   # Configuration
-│   ├── logger_config.py            # Logging setup
-│   │
-│   ├── agents/                     # Agent implementations
-│   │   ├── analysts/               # Market, fundamentals, news, social
-│   │   ├── researchers/            # Bull, bear researchers
-│   │   ├── managers/               # Research & risk managers
-│   │   ├── trader/                 # Trade execution planner
-│   │   ├── risk_mgmt/              # Risk assessment agents
-│   │   └── utils/                  # Shared utilities, memory, tools
-│   │
-│   ├── graph/                      # LangGraph workflow
-│   │   ├── trading_graph.py        # Main graph orchestration
-│   │   ├── setup.py                # Graph setup & node creation
-│   │   ├── conditional_logic.py    # Routing logic
-│   │   ├── propagation.py          # State propagation
-│   │   └── signal_processing.py    # Decision processing
-│   │
-│   └── dataflows/                  # Data layer
-│       ├── interface.py            # Vendor routing
-│       ├── cache.py                # Caching system
-│       ├── validation.py           # Ticker validation
-│       ├── config.py               # Data config
-│       ├── alpha_vantage.py        # Alpha Vantage impl
-│       ├── y_finance.py            # yfinance impl
-│       ├── openai.py               # OpenAI impl
-│       ├── google.py               # Google News impl
-│       └── local.py                # Local data impl
+├── app.py                             # FastAPI server & API endpoints
+├── requirements.txt                   # Python dependencies
+├── agent_prompts.json                 # Agent role definitions & system prompts
 │
-├── frontend/                       # Frontend application (separate)
-└── requirements.txt                # Python dependencies
+├── tradingagents/
+│   ├── conversation_manager.py        # Orchestrates the full analysis flow
+│   ├── query_classifier.py            # Routes queries to relevant agents
+│   ├── agent_pool.py                  # Agent registry and lifecycle
+│   ├── config.py                      # System configuration & defaults
+│   ├── llm_utils.py                   # LLM initialization with fallback
+│   ├── prompt_manager.py              # Prompt template management
+│   ├── logger_config.py               # Centralized logging
+│   │
+│   ├── agents/
+│   │   ├── analysts/                  # Market, fundamentals, news, social
+│   │   ├── researchers/               # Bull and bear case builders
+│   │   ├── managers/                  # Research & risk debate judges
+│   │   ├── trader/                    # Trade execution planner
+│   │   ├── risk_mgmt/                 # Aggressive/conservative/neutral debaters
+│   │   └── utils/                     # Memory, shared tools, state definitions
+│   │
+│   ├── graph/
+│   │   ├── trading_graph.py           # Main LangGraph coordinator
+│   │   ├── setup.py                   # Graph node & edge construction
+│   │   ├── conditional_logic.py       # Phase routing logic
+│   │   ├── propagation.py            # State forwarding between phases
+│   │   ├── reflection.py             # Learning from past decisions
+│   │   └── signal_processing.py      # Decision extraction & formatting
+│   │
+│   └── dataflows/
+│       ├── interface.py               # Vendor routing & fallback logic
+│       ├── cache.py                   # Disk-based cache (24h TTL)
+│       ├── validation.py              # Ticker validation
+│       ├── config.py                  # Vendor configuration
+│       ├── y_finance.py               # yfinance implementation
+│       ├── alpha_vantage*.py          # Alpha Vantage implementations
+│       ├── google_gemini.py           # Gemini + Google Search grounding
+│       ├── openai.py                  # OpenAI data implementation
+│       └── local.py                   # Local/offline fallback
+│
+├── cli/                               # Command-line interface
+└── project_documentation/             # Additional docs
 ```
 
-### Logging
+---
 
-The system uses a centralized logging configuration:
+## Getting Started
 
-```python
-from tradingagents.logger_config import get_logger
+### Prerequisites
 
-logger = get_logger(__name__)
+- Python 3.9+
+- A Google API key (for Gemini)
+- Optional: Alpha Vantage, OpenAI, or Finnhub API keys for additional data sources
 
-logger.debug("Detailed diagnostic info")
-logger.info("High-level workflow events")
-logger.warning("Recoverable issues")
-logger.error("Failures requiring attention")
-```
+### Setup
 
-**Log Levels:**
-- **DEBUG**: Vendor calls, cache hits/misses, detailed execution
-- **INFO**: Phase transitions, high-level workflow, agent selection
-- **WARNING**: Fallbacks, rate limits, recoverable errors
-- **ERROR**: Validation failures, unrecoverable errors
-
-Enable debug mode:
 ```bash
-POST /api/debug/enable
+# Clone and enter the project
+git clone <repository-url>
+cd GeminiTrader
+
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set your API key
+export GOOGLE_API_KEY="your-google-api-key"
+
+# Optional: additional data sources
+export ALPHA_VANTAGE_API_KEY="your-key"
+export OPENAI_API_KEY="your-key"
+export FINNHUB_API_KEY="your-key"
+
+# Start the server
+uvicorn app:app --reload --host localhost --port 8000
 ```
 
-### Testing
+### Quick Test
 
 ```bash
-# Run the development server
-uvicorn app:app --reload
+# Check the server is running
+curl http://localhost:8000/api/health
 
-# Test health endpoint
-curl http://localhost:8082/api/health
-
-# Get available agents
-curl http://localhost:8082/api/agents
-
-# Initialize pool
-curl -X POST http://localhost:8082/api/initialize-pool \
+# Initialize agents
+curl -X POST http://localhost:8000/api/initialize-pool \
   -H "Content-Type: application/json" \
-  -d '{"selected_agents": ["market_analyst", "fundamentals_analyst"]}'
+  -d '{"selected_agents": ["market_analyst", "fundamentals_analyst", "news_analyst"]}'
 
-# Run analysis
-curl -X POST http://localhost:8082/api/query \
+# Run an analysis
+curl -X POST http://localhost:8000/api/query \
   -H "Content-Type: application/json" \
   -d '{
-    "query": "Should I invest in this stock?",
+    "query": "Should I invest in AAPL? Give me a comprehensive analysis.",
     "ticker": "AAPL",
     "date": "2024-01-15"
   }'
 ```
 
-### Adding New Agents
+Interactive API docs are available at `http://localhost:8000/docs` (Swagger UI).
 
-1. Create agent file in appropriate category:
-```python
-# tradingagents/agents/analysts/new_analyst.py
-def create_new_analyst(llm, memory=None):
-    def new_analyst_node(state):
-        # Implementation
-        return {"messages": [result], "custom_report": response}
-    return new_analyst_node
-```
+---
 
-2. Register in `agent_pool.py`:
+## Future Ideas to Explore
+
+### Expanding the Agent System
+
+- **Options Analyst**: An agent that evaluates options strategies (covered calls, protective puts, spreads) based on current volatility and the existing recommendation
+- **Sector/Macro Analyst**: An agent that contextualizes individual stock analysis within broader sector rotation, macroeconomic trends, interest rate environment, and GDP data
+- **Earnings Analyst**: A specialist that focuses specifically on upcoming earnings, historical earnings surprises, and guidance revisions
+- **Insider Activity Analyst**: Deeper analysis of SEC filings, Form 4 data, and institutional ownership changes beyond the current basic insider sentiment
+
+### Portfolio-Level Reasoning
+
+Currently the system analyzes one stock at a time. Future versions could:
+- Accept a portfolio and analyze correlations, concentration risk, and diversification gaps
+- Suggest rebalancing based on current holdings and new analysis
+- Track portfolio performance over time and adjust agent behavior accordingly
+- Run comparative analysis ("Should I buy AAPL or MSFT?") with side-by-side debate
+
+### Backtesting and Validation
+
+- **Historical replay**: Run past stock data through the system and compare recommendations against actual outcomes
+- **Agent accuracy tracking**: Score each agent's contributions over time — which analysts and researchers produce the most useful insights?
+- **Confidence calibration**: Track whether "high confidence" calls actually outperform "medium confidence" ones
+
+### Real-Time and Streaming
+
+- **WebSocket support**: Stream analysis as it happens rather than waiting for the full pipeline to complete
+- **Live market monitoring**: Set up watchlists where the system periodically re-evaluates positions
+- **Alert system**: Trigger re-analysis when significant news breaks or price levels are hit
+- **Intraday analysis**: Extend beyond daily data to support shorter timeframes
+
+### Improved Data Sources
+
+- **SEC EDGAR integration**: Direct access to 10-K, 10-Q, 8-K filings for fundamental analysis
+- **Options chain data**: Feed implied volatility, put/call ratios, and unusual activity into analysis
+- **Alternative data**: Satellite imagery, web traffic, app download metrics, credit card spending data
+- **Crypto/forex support**: Extend beyond equities to other asset classes
+
+### Frontend and User Experience
+
+- **Interactive dashboard**: A web UI that visualizes the debate process, shows agent reasoning in real-time, and lets users drill into specific analyst reports
+- **Agent configuration UI**: Let users enable/disable agents, adjust debate rounds, and set risk preferences without editing config files
+- **Analysis history with search**: Full-text search over past analyses, comparison views, and trend tracking
+- **Export formats**: PDF reports, email digests, integration with trading platforms
+
+### Learning and Adaptation
+
+- **Reinforcement from outcomes**: Feed actual trade outcomes back into the memory system so agents genuinely learn what works
+- **User feedback loop**: Let users rate analyses and use that signal to improve prompt engineering and agent weighting
+- **Dynamic agent weighting**: If the fundamentals analyst consistently provides better signals for tech stocks, weight that agent's input higher for similar future queries
+- **Prompt evolution**: A/B test different agent prompts and systematically improve them based on output quality
+
+### Infrastructure and Scalability
+
+- **Redis-backed sessions**: Move from in-memory to persistent session storage for horizontal scaling
+- **Job queue**: Offload long-running analyses to a task queue (Celery/RQ) so the API stays responsive
+- **Rate limit management**: Smarter rate limit handling across vendors with token bucket algorithms
+- **Observability**: OpenTelemetry tracing across the full agent pipeline for debugging and performance optimization
+- **Containerization**: Docker and Docker Compose setup for easy deployment
+
+### Research Directions
+
+- **Multi-model ensemble**: Run the same analysis through different LLMs (Gemini, GPT-4, Claude) and compare their reasoning
+- **Structured output schemas**: Move from free-text LLM responses to validated Pydantic models for more reliable downstream processing
+- **Graph-of-thought reasoning**: Allow agents to share intermediate reasoning rather than just final reports
+- **Adversarial testing**: Deliberately test the system with stocks that have recently had major events to measure response quality
+
+---
+
+## Configuration Reference
+
+### Core Configuration (`tradingagents/config.py`)
+
 ```python
-"new": {
-    "name": "New Analyst",
-    "description": "Description of capabilities",
-    "factory": create_new_analyst,
-    "requires_memory": False
+DEFAULT_CONFIG = {
+    "llm_provider": "google",
+
+    # Model candidates (tried in order)
+    "quick_think_llm_candidates": [
+        "gemini-2.5-flash",
+        "gemini-2.0-flash-001",
+        "gemini-flash-latest",
+        "gemini-2.0-flash-lite",
+    ],
+    "deep_think_llm_candidates": [
+        "gemini-2.5-pro",
+        "gemini-pro-latest",
+        "gemini-2.0-flash-exp",
+    ],
+
+    # Data vendor defaults by category
+    "data_vendors": {
+        "core_stock_apis": "yfinance",
+        "technical_indicators": "yfinance",
+        "fundamental_data": "alpha_vantage",
+        "news_data": "yfinance",
+    },
+
+    # Per-tool vendor overrides (takes precedence)
+    "tool_vendors": {
+        "get_global_news": "google_gemini",
+        "get_news": "google_gemini",
+        "get_insider_sentiment": "local",
+    },
+
+    "max_debate_rounds": 1,
+    "max_risk_discuss_rounds": 1,
 }
 ```
 
-3. Add to graph workflow in `graph/setup.py`
+### Extending the System
 
-### Adding New Data Vendors
+**Adding a new agent:**
+1. Create the agent in `tradingagents/agents/<category>/`
+2. Register it in `agent_pool.py`
+3. Wire it into the LangGraph workflow in `graph/setup.py`
 
-1. Implement vendor methods:
-```python
-# tradingagents/dataflows/new_vendor.py
-def get_stock_data_new_vendor(ticker: str, period: str = "1mo"):
-    # Implementation
-    return data
-```
+**Adding a new data vendor:**
+1. Implement vendor methods in `tradingagents/dataflows/`
+2. Register methods in `dataflows/interface.py`
+3. Add vendor name to relevant categories in `config.py`
 
-2. Register in `dataflows/interface.py`:
-```python
-VENDOR_METHODS = {
-    "get_stock_data": {
-        "new_vendor": get_stock_data_new_vendor,
-        # ...
-    }
-}
-```
-
-3. Configure in `config.py`:
-```python
-"data_vendors": {
-    "core_stock_apis": "new_vendor",
-}
-```
-
-## Best Practices
-
-### API Usage
-- Always initialize an agent pool before running queries
-- Use session IDs for multi-user scenarios
-- Clear history periodically to avoid memory bloat
-- Monitor active sessions via `/api/sessions`
-
-### Performance
-- Cache is enabled by default (24h TTL)
-- Use query classifier to minimize unnecessary agent executions
-- Consider using only necessary agents for specific queries
-- Enable debug mode only when troubleshooting
-
-### Data Vendors
-- Start with free vendors (yfinance, google)
-- Add paid vendors (Alpha Vantage, OpenAI) as needed
-- Configure fallback chains for reliability
-- Monitor rate limits in logs
-
-### Error Handling
-- All endpoints return structured error responses
-- Ticker validation fails fast before expensive operations
-- Vendor fallbacks handle rate limits automatically
-- Session not found errors indicate need to initialize pool
+---
 
 ## License
 
@@ -719,7 +386,3 @@ VENDOR_METHODS = {
 ## Contributing
 
 [Your Contributing Guidelines Here]
-
-## Support
-
-For issues, questions, or contributions, please [open an issue](your-repo-url/issues).
